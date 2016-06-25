@@ -132,8 +132,8 @@ int FrbrdDatabase::CreateConnection(const std::string& server_, const std::strin
 		(*dataBase_)->Connect();
 		return 0;
 	}
-	//   catch (IBPP::Exception*)
-	//  {
+	// catch (IBPP::Exception*)
+	// {
 	//     if ((*dataBase_) != 0)
 	//     {
 	//         (*dataBase_)->Disconnect();
