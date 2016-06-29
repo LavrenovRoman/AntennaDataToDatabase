@@ -53,13 +53,16 @@
     <ClCompile Include="GeneratedFiles\qrc_antennadatatodatabase.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="FrbrdDatabase.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ibpp\all_in_one.cpp">
       <Filter>ibpp</Filter>
     </ClCompile>
     <ClCompile Include="ParseFekoFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FrbrdDatabase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -85,6 +88,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ParseFekoFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
