@@ -3,8 +3,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_antennadatatodatabase.h"
-#include "ParseFekoFile.h"
-#include "FrbrdDatabase.h"
+#include "Core.h"
 
 class AntennaDataToDatabase : public QMainWindow
 {
@@ -16,10 +15,7 @@ public:
 
 private:
 	Ui::AntennaDataToDatabaseClass ui;
-	QStringList outs, pres;
-	QStringList out_names, pre_names;
-	std::vector<Antenna> antennas;
-	FrbrdDatabase FBDataBase;
+	Core core;
 
 private slots:
 	void ClickedOpenDir();

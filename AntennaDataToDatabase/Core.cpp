@@ -8,6 +8,10 @@ using namespace std;
 
 Core::Core()
 {
+	outs.clear();
+	pres.clear();
+	out_names.clear();
+	pre_names.clear();
 }
 
 Core::~Core()
@@ -82,6 +86,7 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 		{
 			cntOutFiles = outs.size();
 			cntPreFiles = pres.size();
+			cout << "Directory with .out and .pre files is opened" << endl;
 			return 0;
 		}
 		else
