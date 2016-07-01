@@ -1,7 +1,6 @@
 #include <iostream>
 #include <QFileDialog>
 #include <QSettings>
-#include <QVariant>
 #include "Core.h"
 #include "FrbrdDatabase.h"
 #include "Antenna.h"

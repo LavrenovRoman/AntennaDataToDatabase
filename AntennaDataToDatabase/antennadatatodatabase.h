@@ -3,7 +3,10 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_antennadatatodatabase.h"
+
 #include "Core.h"
+
+#pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
 
 class AntennaDataToDatabase : public QMainWindow
 {

@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="ibpp">
-      <UniqueIdentifier>{f511ef8d-f631-424f-8020-565f72664cf7}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Antenna.h">
@@ -44,8 +41,8 @@
     <ClCompile Include="ParseFekoFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AntennaDataToDatabase\ibpp\all_in_one.cpp">
-      <Filter>ibpp</Filter>
+    <ClCompile Include="ibpp\all_in_one.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

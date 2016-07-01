@@ -33,9 +33,6 @@
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="ibpp">
-      <UniqueIdentifier>{79d98655-752d-4bd7-abfc-9f1b57c62d0b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -53,18 +50,6 @@
     <ClCompile Include="GeneratedFiles\qrc_antennadatatodatabase.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="ibpp\all_in_one.cpp">
-      <Filter>ibpp</Filter>
-    </ClCompile>
-    <ClCompile Include="ParseFekoFile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FrbrdDatabase.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Core.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="antennadatatodatabase.h">
@@ -80,18 +65,6 @@
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_antennadatatodatabase.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Antenna.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FrbrdDatabase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ParseFekoFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Core.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
