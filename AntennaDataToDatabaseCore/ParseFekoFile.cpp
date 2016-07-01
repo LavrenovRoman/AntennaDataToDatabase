@@ -1,4 +1,5 @@
 #include "ParseFekoFile.h"
+#include "Antenna.h"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -550,7 +551,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 
 			if (_antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS)
 			{
-				double dx,dy,dz;
+				//double dx,dy,dz;
 				words = "Data for the individual layers";
 				while (current_str.find(words) == string::npos) 
 				{
@@ -1161,7 +1162,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 		if (vecS11Db[fst_min] > maxDB) _antenna.outputPar.fst_bandwidth = 0.0;
 		else
 		{
-			int i = fst_min;
+			size_t i = fst_min;
 			double leftFR, rightFR;
 			double a, k;
 			while ((i > 0) && (vecS11Db[i] < maxDB)) { i--; };
@@ -1180,7 +1181,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 		if (vecS11Db[scnd_min] > maxDB) _antenna.outputPar.scnd_bandwidth = 0.0;
 		else
 		{
-			int i = scnd_min;
+			size_t i = scnd_min;
 			double leftFR, rightFR;
 			double a, k;
 			while ((i > 0) && (vecS11Db[i] < maxDB)) { i--; };
@@ -1203,8 +1204,7 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 {
 	//setlocale(LC_ALL, "Russian");
 
-	int valueInt, nomer = 0;
-	double valueDouble;
+	int nomer = 0;
 	std::string current_str, word, token;
 
 	_antenna.inputPar.findDIPOLE = false;

@@ -1,9 +1,13 @@
-#include <QSettings>
-#include "ParseFekoFile.h"
-#include "FrbrdDatabase.h"
+#include <memory>
+#include <vector>
+#include <QStringList>
+#include "Core_API.h"
 
-class Core
+struct Antenna;
+class FrbrdDatabase;
+class ParseFekoFile;
 
+class CORE_API Core
 {
 public:
 	Core();
@@ -16,7 +20,7 @@ public:
 
 private:
 
-	FrbrdDatabase FBDataBase;
+	std::shared_ptr<FrbrdDatabase> pFBDataBase;
 	QStringList outs, pres;
 	QStringList out_names, pre_names;
 	std::vector<Antenna> antennas;

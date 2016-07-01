@@ -3,6 +3,9 @@
 #include <QSettings>
 #include <QVariant>
 #include "Core.h"
+#include "FrbrdDatabase.h"
+#include "Antenna.h"
+#include "ParseFekoFile.h"
 
 using namespace std;
 
@@ -12,6 +15,7 @@ Core::Core()
 	pres.clear();
 	out_names.clear();
 	pre_names.clear();
+	pFBDataBase = std::make_shared<FrbrdDatabase>();
 }
 
 Core::~Core()
@@ -32,7 +36,7 @@ int Core::ConnectDatabase()
 	}
 	else
 	{
-		if (FBDataBase.Initialization(server, path, login, password) != 0)
+		if (pFBDataBase->Initialization(server, path, login, password) != 0)
 		{
 			cout << "Error! Can not connect to database. Check parameters" << endl;
 			return -2;
@@ -50,7 +54,7 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 		pres = dir.entryList(QStringList("*.pre"));
 		cout << "Find " << outs.size() << "out files" << endl;
 		cout << "Find " << pres.size() << "pre files" << endl;
-		for (size_t i=0; i<std::min(outs.size(), pres.size()); ++i)
+		for (int i=0; i<min(outs.size(), pres.size()); ++i)
 		{
 			if (outs[i].left(outs[i].indexOf('.')) != pres[i].left(pres[i].indexOf('.')))
 			{
@@ -69,7 +73,7 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 		if (outs.size() > 0)
 		{
 			out_names = outs;
-			for (size_t i=0; i<outs.size(); ++i)
+			for (int i=0; i<outs.size(); ++i)
 			{
 				outs[i] = strdir + "/" + outs[i];
 			}
@@ -77,7 +81,7 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 		if (pres.size() > 0)
 		{
 			pre_names = pres;
-			for (size_t i=0; i<pres.size(); ++i)
+			for (int i=0; i<pres.size(); ++i)
 			{
 				pres[i] = strdir + "/" + pres[i];
 			}
@@ -105,7 +109,7 @@ int Core::ReadFiles()
 	{
 		ParseFekoFile parseFeko;
 		antennas.clear();
-		for (size_t i=0; i<outs.size(); ++i)
+		for (int i=0; i<outs.size(); ++i)
 		{
 			QString name = out_names.at(i).toLocal8Bit();
 			cout << name.toStdString() << endl;
@@ -115,11 +119,11 @@ int Core::ReadFiles()
 			antennas.push_back(newAntenna);
 		}
 
-		for (size_t i=0; i<outs.size(); ++i)
+		for (int i=0; i<outs.size(); ++i)
 		{
 			if (!antennas[i].aborted)
 			{
-				for (size_t j=0; j<pres.size(); ++j)
+				for (int j=0; j<pres.size(); ++j)
 				{
 					if (outs[i].left(outs[i].indexOf('.')) == pres[j].left(pres[j].indexOf('.')))
 					{
@@ -150,7 +154,7 @@ int Core::WriteData()
 			{
 				QString name = out_names.at(i).toLocal8Bit();
 				cout << name.toStdString() << endl;
-				FBDataBase.WriteAntennaData(antennas[i]);
+				pFBDataBase->WriteAntennaData(antennas[i]);
 			}
 		}
 

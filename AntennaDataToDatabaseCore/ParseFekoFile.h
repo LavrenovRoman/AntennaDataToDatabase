@@ -1,5 +1,7 @@
-#include "Antenna.h"
 #include <QString>
+
+struct Antenna;
+enum TYPE;
 
 class ParseFekoFile
 {

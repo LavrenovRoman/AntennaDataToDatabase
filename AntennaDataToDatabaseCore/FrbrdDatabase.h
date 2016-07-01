@@ -6,7 +6,7 @@ namespace IBPP
 	typedef Ptr<IDatabase> Database;
 }
 
-class Antenna;
+struct Antenna;
 
 class FrbrdDatabase
 {
