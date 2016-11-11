@@ -45,6 +45,11 @@ void AntennaDataToDatabase::ClickedOpenDir()
 	int res = core.OpenDirectory(strdir, cntOutFiles, cntPreFiles);
 	ui.lbl_FindFiles->setText(QString::fromLocal8Bit("Íàéäåíî out ôàéëîâ: ") + QString::number(cntOutFiles) + QString::fromLocal8Bit("\n") + QString::fromLocal8Bit("Íàéäåíî pre ôàéëîâ: ") + QString::number(cntPreFiles));
 	ui.lbl_Result->setText(QString::fromLocal8Bit(""));
+
+	if (res == 0) 
+	ui.but_LoadOutToDB->setEnabled(true);
+	else
+	ui.but_LoadOutToDB->setEnabled(false);
 }
 
 void AntennaDataToDatabase::ClickedOpenOutFiles()
@@ -54,7 +59,7 @@ void AntennaDataToDatabase::ClickedOpenOutFiles()
 		ui.lbl_Result->setText(QString::fromLocal8Bit("Ôàéëû ñ÷èòàíû"));
 		ui.lbl_Result->repaint();
 	}
-	if (core.WriteData() == 0)
+	if (core.PrepareExperimentBeforeWrite() == 0 && core.WriteData() == 0)
 	{
 		ui.lbl_Result->setText(QString::fromLocal8Bit("Çàïèñàíî â ÁÄ"));
 		ui.lbl_Result->repaint();
