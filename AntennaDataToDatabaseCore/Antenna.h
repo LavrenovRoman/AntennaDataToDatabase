@@ -1,27 +1,45 @@
 #include <vector>
+#include <ctime>
 
 enum TYPE {WIRE, STRIPE, PLANE};
 
 struct InputParameters 
 {
-	double Scale;
-	double Radius;
-	int fr_N;
-	int fr_m;
-	std::vector<double> fr_pT, fr_pX, fr_pY, fr_lam, fr_al;
-	std::vector<double> fr_D11, fr_D12, fr_D21, fr_D22;
-	std::vector<double> fr_pred1X, fr_pred1Y, fr_predmX, fr_predmY;
-	double dlin;
-	double seg_len;
-	double seg_rad;
-	int Fmax, Fmin, Fnum;
+	struct RADIATOR
+	{
+		double ScaleX, ScaleY;
+		double Radius_StripWidth_FeedLineWidth;
+		int fr_N;
+		int fr_m;
+		std::vector<double> fr_pT, fr_pX, fr_pY, fr_lam, fr_al;
+		std::vector<double> fr_D11, fr_D12, fr_D21, fr_D22;
+		std::vector<double> fr_pred1X, fr_pred1Y, fr_predmX, fr_predmY;
+	} Radiator;
+	
+	struct FEED
+	{
+		double FeedX, FeedY;
+	} Feed;
 
-	bool dipole;
-	double AngleDipoleX; //dipole = true
-	double AngleDipoleY; //dipole = true
-	double AngleDipoleZ; //dipole = true
+	struct SUBSTRATE
+	{
+		double Permittivity;
+		double LossTangent;
+		double Density;
+		double Thickness;
+		double CoorLeftUpX,    CoorLeftUpY;
+		double CoorRightDownX, CoorRightDownY;
+	} Substrate;
 
-	bool findDIPOLE;
+	struct GROUND
+	{
+		std::vector<double> coordX, coordY;
+	} Ground;
+
+	bool findRADIATOR;
+	bool findFEED;
+	bool findSUBSTRATE;
+	bool findGROUND;
 };
 
 struct DATA_FOR_MEMORY_USAGE
@@ -59,7 +77,7 @@ struct DATA_FOR_MEMORY_USAGE
 
 struct DATA_FOR_DIELECTRIC_MEDIA
 {
-	int InternalIndex;
+	int    InternalIndex;
 	double RelPermittivity;
 	double RelPermeability;
 	double Conductivity;
@@ -70,14 +88,14 @@ struct DATA_FOR_DIELECTRIC_MEDIA
 
 struct EXCITATION_BY_VOLTAGE_SOURCE
 {
-	int ExcitationIndex;
+	int    ExcitationIndex;
 	double Frequency;
 	double Wavelength;
 	double OpenCircuitVoltage;
 	double Phase;
 	double ElectricalEdgeLength;	//STRIPE
-	int SourceSegmLabel;			//WIRE
-	int AbsolNumSegms;				//WIRE
+	int    SourceSegmLabel;			//WIRE
+	int    AbsolNumSegms;			//WIRE
 	double LocationExcitX;			//WIRE
 	double LocationExcitY;			//WIRE
 	double LocationExcitZ;			//WIRE
@@ -124,8 +142,8 @@ struct DATA_OF_THE_VOLTAGE_SOURCE
 
 struct SCATTERING_PARAMETERS
 {
-	int SPortSinc;
-	int SPortSource;
+	int    SPortSinc;
+	int    SPortSource;
 	double SRealPart;
 	double SImagPart;
 	double SMagnitudeLinear;
@@ -216,6 +234,9 @@ struct OutputParameters
 	double scnd_s11;
 	double scnd_w;
 	double scnd_bandwidth;
+	double third_s11;
+	double third_w;
+	double third_bandwidth;
 
 	bool findDATA_FOR_MEMORY_USAGE;
 	bool findDATA_FOR_DIELECTRIC_MEDIA;
@@ -240,3 +261,15 @@ struct Antenna
 	OutputParameters outputPar;
 };
 
+struct Experiment_Param
+{
+	std::string name;
+	double pBegin, pEnd, pStep;
+};
+
+struct Experiment
+{
+	tm date;
+	std::string comment;
+	std::vector<Experiment_Param> cycles;
+};

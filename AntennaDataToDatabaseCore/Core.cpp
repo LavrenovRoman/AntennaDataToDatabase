@@ -1,10 +1,14 @@
 #include <iostream>
+#include <QStringList>
 #include <QFileDialog>
 #include <QSettings>
 #include "Core.h"
 #include "FrbrdDatabase.h"
 #include "Antenna.h"
 #include "ParseFekoFile.h"
+#include <stdio.h> 
+#include <direct.h>
+#include "Windows.h"
 
 using namespace std;
 
@@ -15,20 +19,80 @@ Core::Core()
 	out_names.clear();
 	pre_names.clear();
 	pFBDataBase = std::make_shared<FrbrdDatabase>();
+	pExperiment = std::make_shared<Experiment>();
+	donorDB = false;
 }
 
 Core::~Core()
 {
 }
 
+int Core::SetData(Experiment &exp, std::vector<Antenna>& _antennas)
+{
+	pExperiment = std::make_shared<Experiment>(exp);
+	antennas = _antennas;
+	return 0;
+}
+
+int Core::SetDonorDB()
+{
+	donorDB = true;
+	return 0;
+}
+
 int Core::ConnectDatabase()
 {
-	QSettings sett("Options.ini", QSettings::IniFormat);
+	//std::string Path = ExtractFileDir(Application->ExeName);
+	//QString dir = QCoreApplication::applicationFilePath();
+	char pth[FILENAME_MAX] = { 0 };
+	GetModuleFileName(NULL, pth, FILENAME_MAX);
+	char* p = strrchr(pth, '\\');
+	if (p) *(p + 1) = 0;
+	else pth[0] = 0;
+
+	std::string m_pathmain = pth;
+
+
+	//char current_work_dir[FILENAME_MAX];
+	//_getcwd(current_work_dir, sizeof(current_work_dir));
+
+	char current_work_dir_[FILENAME_MAX];
+	int j = 0;
+	for (int i = 0; i < sizeof(pth); ++i)
+	{
+		if (pth[i] == '\\')
+		{
+			current_work_dir_[j] = '/';
+			j++;
+			continue;
+		}
+		current_work_dir_[j] = pth[i];
+		j++;
+	}
+	std::string path_(current_work_dir_);
+	std::string path__("Options.ini");
+	//path_ = path_ + "/" + path__;
+	path_ = path_ + path__;
+
+	cout << "Try to connect database...  " << endl;
+	cout << "Settings from file - " << path_ << endl;
+	QString qpath = QString::fromStdString(path_);
+	QSettings sett(qpath, QSettings::IniFormat);
 	string server  = sett.value("Server").toString().toStdString();
-	string path = sett.value("Path").toString().toStdString();
-	string login = sett.value("Login").toString().toStdString();
-	string password = sett.value("Password").toString().toStdString();
-	if (path == "" || login == "" || password == "")
+	string path;
+	if (!donorDB)
+	{
+		QString v = QString::fromLocal8Bit("Path");
+		path = sett.value(v).toString().toStdString();
+	}
+	else
+	{
+		QString v = QString::fromLocal8Bit("PathDonorDB");
+		path = sett.value(v).toString().toStdString();
+	}
+	string login = "SYSDBA";//sett.value("Login").toString().toStdString();
+	string password = "masterkey";//sett.value("Password").toString().toStdString();
+	if (path == ""/* || login == "" || password == ""*/)
 	{
 		cout << "Error! Can not find file Options.ini" << endl;
 		return -1;
@@ -38,9 +102,12 @@ int Core::ConnectDatabase()
 		if (pFBDataBase->Initialization(server, path, login, password) != 0)
 		{
 			cout << "Error! Can not connect to database. Check parameters" << endl;
+			cout << "Server = " << server << endl;
+			cout << "Path = " << path << endl;
 			return -2;
 		}
 	}
+	cout << "Database connected!" << endl;
 	return 0;
 }
 
@@ -49,10 +116,11 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 	if (strdir != "")
 	{
 		QDir dir(strdir);
+		cout << "Directory =" << strdir.toLocal8Bit().constData() << endl;
 		outs = dir.entryList(QStringList("*.out"));
 		pres = dir.entryList(QStringList("*.pre"));
-		cout << "Find " << outs.size() << "out files" << endl;
-		cout << "Find " << pres.size() << "pre files" << endl;
+		cout << "Find " << outs.size() << " out files" << endl;
+		cout << "Find " << pres.size() << " pre files" << endl;
 		for (int i=0; i<min(outs.size(), pres.size()); ++i)
 		{
 			if (outs[i].left(outs[i].indexOf('.')) != pres[i].left(pres[i].indexOf('.')))
@@ -104,56 +172,95 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 
 int Core::ReadFiles()
 {
-	if (outs.size() > 0)
+	QString name, file;
+
+	if (outs.size() > 0 && outs.size() == pres.size())
 	{
 		ParseFekoFile parseFeko;
 		antennas.clear();
-		for (int i=0; i<outs.size(); ++i)
-		{
-			QString name = out_names.at(i).toLocal8Bit();
-			cout << name.toStdString() << endl;
-			Antenna newAntenna;
-			QString file = outs[i];
-			parseFeko.ParseFileOut(file, newAntenna);
-			antennas.push_back(newAntenna);
-		}
+		
+		QFileInfo filetemp(outs[0]);
+		QDir dir(filetemp.absoluteDir());
+		QString experiment_name = dir.absolutePath() + QString("/comment.txt");
+		parseFeko.ParseFileComment(experiment_name, *(pExperiment.get()));
 
 		for (int i=0; i<outs.size(); ++i)
 		{
-			if (!antennas[i].aborted)
+			Antenna newAntenna;
+			antennas.push_back(newAntenna);
+			//for (int j=0; j<pres.size(); ++j)
+			//{
+			//	if (outs[i].left(outs[i].indexOf('.')) == pres[j].left(pres[j].indexOf('.')))
+			//	{
+			//		QString name = pre_names.at(i).toLocal8Bit();
+			//		cout << name.toStdString() << endl;
+			//		QString file = pres[j];
+			//		parseFeko.ParseFilePre(file, antennas[i]);
+			//		break;
+			//	}
+			//}
+
+			antennas[i].aborted = false;
+
+			name = pre_names.at(i).toLocal8Bit();
+			cout << name.toStdString() << endl;
+			file = pres[i];
+			parseFeko.ParseFilePre(file, antennas[i]);
+
+			if (antennas[i].aborted) continue;
+
+			name = out_names.at(i).toLocal8Bit();
+			cout << name.toStdString() << endl;
+			file = outs[i];
+			parseFeko.ParseFileOut(file, antennas[i]);
+
+			if (antennas[i].aborted) 
 			{
-				for (int j=0; j<pres.size(); ++j)
-				{
-					if (outs[i].left(outs[i].indexOf('.')) == pres[j].left(pres[j].indexOf('.')))
-					{
-						QString name = pre_names.at(i).toLocal8Bit();
-						cout << name.toStdString() << endl;
-						QString file = pres[j];
-						parseFeko.ParseFilePre(file, antennas[i]);
-						break;
-					}
-				}
+				cout << "File " << name.toStdString() << " is aborted!"<< endl;
+				continue;
 			}
 		}
 
 		cout << "Reading files is finished" << endl;
 		return 0;
 	}
-	cout << "Error! There are no out files" << endl;
+	cout << "Error! There are no some out or pre files" << endl;
 	return -1;
+}
+
+int Core::PrepareExperimentBeforeWrite()
+{
+	tm* wrnow;
+	time_t now;
+	time(&now);
+	wrnow = localtime(&now);
+	pExperiment->comment += " (";
+	pExperiment->comment += std::to_string(wrnow->tm_year + 1900);
+	pExperiment->comment += std::to_string(wrnow->tm_mon + 1);
+	pExperiment->comment += std::to_string(wrnow->tm_mday);
+	pExperiment->comment += std::to_string(wrnow->tm_hour);
+	pExperiment->comment += std::to_string(wrnow->tm_min);
+	pExperiment->comment += std::to_string(wrnow->tm_sec);
+	pExperiment->comment += ")";
+	return 0;
 }
 
 int Core::WriteData()
 {
 	if (antennas.size() > 0)
 	{
+		int resId = pFBDataBase->WriteExperiment(pExperiment.get());
+
 		for (size_t i=0; i<antennas.size(); ++i)
 		{
 			if (!antennas[i].aborted)
 			{
-				QString name = out_names.at(i).toLocal8Bit();
-				cout << name.toStdString() << endl;
-				pFBDataBase->WriteAntennaData(antennas[i]);
+				if (out_names.size() > 0)
+				{
+					QString name = out_names.at(i).toLocal8Bit();
+					cout << name.toStdString() << endl;
+				}
+				pFBDataBase->WriteAntennaData(antennas[i], resId);
 			}
 		}
 
@@ -162,4 +269,19 @@ int Core::WriteData()
 	}
 	cout << "Error! There are not valid antennas" << endl;
 	return -1;
+}
+
+int Core::Request(std::string requestStr, int countSelect, std::vector<std::vector<double>>& result)
+{
+	return pFBDataBase->Request(requestStr, countSelect, result);
+}
+
+int Core::GetExperiments(std::vector<int>& ids, std::vector<Experiment>& exps, bool fullComment)
+{
+	return pFBDataBase->GetExperiments(ids, exps, fullComment);
+}
+
+int Core::GetAntennasByExperiment(std::vector<Antenna>& antennas, std::vector<int>& antennasID, int idExperiment)
+{
+	return pFBDataBase->GetAntennas(antennas, antennasID, idExperiment);
 }
