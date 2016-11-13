@@ -23,6 +23,7 @@
 /CopyDB/Win32/
 /CopyDB/Debug/
 /CopyDB/Release/
+/lib
 /lib/AntennaDataToDatabaseCore32.exp
 /lib/AntennaDataToDatabaseCore32.pdb
 /lib/AntennaDataToDatabaseCore32.dll
