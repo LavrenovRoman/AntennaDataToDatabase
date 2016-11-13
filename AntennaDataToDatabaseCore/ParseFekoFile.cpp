@@ -12,7 +12,52 @@
 #include <cstdlib>
 #include <cstddef>
 
+#include <QString>
+
 using namespace std;
+
+void ParseFekoFile::ParseFileComment(QString _file, Experiment& _experiment)
+{
+	std::string current_str, word, token;
+	std::vector<std::string> vs;
+	ifstream file(_file.toLocal8Bit().constData());
+	if (file.is_open())
+	{
+		getline(file, current_str);
+		size_t s_ = 0;
+		while (s_ < current_str.size())
+		{
+			if (current_str[s_] == '.') current_str[s_] = ' ';
+			if (current_str[s_] == '/') current_str[s_] = ' ';
+			++s_;
+		}
+		stringstream ss(current_str);
+		vs.clear();
+		while (ss >> word) vs.push_back(word);
+		_experiment.date.tm_year = stoi(vs[2]);
+		_experiment.date.tm_mon  = stoi(vs[0]);
+		_experiment.date.tm_mday = stoi(vs[1]);
+
+		getline(file, current_str);
+		_experiment.comment = current_str;
+		
+		getline(file, current_str);
+		while(!(file.eof()))
+		{
+			Experiment_Param _experiment_Param;
+			vs.clear();
+			stringstream ss(current_str);
+			while (ss >> word) vs.push_back(word);
+			_experiment_Param.name =   vs[0];
+			_experiment_Param.pBegin = stod(vs[1]);
+			_experiment_Param.pEnd =   stod(vs[2]);
+			_experiment_Param.pStep =  stod(vs[3]);
+			_experiment.cycles.push_back(_experiment_Param);
+			getline(file, current_str);
+			if (current_str.size() < 2) break;
+		}
+	}
+}
 
 void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 {
@@ -79,16 +124,16 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 					   current_str.find("Length of the segments in m:") == string::npos)
 				{getline(file, current_str);}
 			
-				if (current_str.find("Surface of all triangles in m*m:") != string::npos)
-				{
-					_antenna.type = STRIPE;
-				}
-				if (current_str.find("Length of the segments in m:") != string::npos)
-				{
-					_antenna.type = WIRE;
-				}
+//				if (current_str.find("Surface of all triangles in m*m:") != string::npos)
+//				{
+//					_antenna.type = STRIPE;
+//				}
+//				if (current_str.find("Length of the segments in m:") != string::npos)
+//				{
+//					_antenna.type = WIRE;
+//				}
 
-				if (_antenna.type == STRIPE)
+				if (_antenna.type == STRIPE || _antenna.type == PLANE)
 				{
 					words = "Surface of all triangles in m*m:";
 					while (current_str.find(words) == string::npos) {getline(file, current_str);}
@@ -455,7 +500,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 						valueDouble = stod(token);
 						NEW_EXCITATION_BY_VOLTAGE_SOURCE.Phase = valueDouble;
 					}
-					if (_antenna.type == STRIPE)
+					if (_antenna.type == STRIPE || _antenna.type == PLANE)
 					{
 						words = "Electrical edge length in m:";
 						while (current_str.find(words) == string::npos) {getline(file, current_str);}
@@ -1149,12 +1194,21 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 	int fst_min = j;
 	if (j < (N - 1))
 	{
-		while ((vecS11[j] <= vecS11[j + 1]) && (j < N - 1)) j++;
-		while ((vecS11[j] > vecS11[j + 1]) && (j < N - 1)) j++;
+		while ((j < N - 1) && (vecS11[j] <= vecS11[j + 1])) j++;
+		while ((j < N - 1) && (vecS11[j] > vecS11[j + 1])) j++;
 	}
 	_antenna.outputPar.scnd_s11 = vecS11[j];
 	_antenna.outputPar.scnd_w = vecW[j];
 	int scnd_min = j;
+	if (j < (N - 1))
+	{
+		while ((j < N - 1) && (vecS11[j] <= vecS11[j + 1])) j++;
+		while ((j < N - 1) && (vecS11[j] > vecS11[j + 1])) j++;
+	}
+	_antenna.outputPar.third_s11 = vecS11[j];
+	_antenna.outputPar.third_w = vecW[j];
+	int third_min = j;
+
 
 	double maxDB = -10.0;
 
@@ -1196,6 +1250,25 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 			_antenna.outputPar.scnd_bandwidth = rightFR - leftFR;
 		}
 	}
+	{
+		if (vecS11Db[third_min] > maxDB) _antenna.outputPar.third_bandwidth = 0.0;
+		else
+		{
+			size_t i = third_min;
+			double leftFR, rightFR;
+			double a, k;
+			while ((i > 0) && (vecS11Db[i] < maxDB)) { i--; };
+			k = (vecW[i + 1] - vecW[i]) / (vecS11Db[i + 1] - vecS11Db[i]);
+			a = vecW[i] - vecS11Db[i] * k;
+			leftFR = k * maxDB + a;
+			i = third_min;
+			while ((i < vecS11Db.size() - 2) && (vecS11Db[i] < maxDB)) { i++; };
+			k = (vecW[i + 1] - vecW[i]) / (vecS11Db[i + 1] - vecS11Db[i]);
+			a = vecW[i] - vecS11Db[i] * k;
+			rightFR = k * maxDB + a;
+			_antenna.outputPar.third_bandwidth = rightFR - leftFR;
+		}
+	}
 
 	valueInt = 0;
 }
@@ -1203,32 +1276,35 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 {
 	//setlocale(LC_ALL, "Russian");
-
 	int nomer = 0;
 	std::string current_str, word, token;
 
-	_antenna.inputPar.findDIPOLE = false;
+	bool findRADIATOR		= false;
+	bool findFEED			= false;
+	bool findSUBSTRATE		= false;
+	bool findGROUND			= false;
 
-	_antenna.aborted = false;
 	bool findFinish = false;
-	ifstream fileFinish(_file.toLocal8Bit().constData());
+	ifstream fileFinishEnd(_file.toLocal8Bit().constData());
 	_antenna.pathPre = _file.toLocal8Bit().constData();
-	while(!(fileFinish.eof()))
+	while(!(fileFinishEnd.eof()))
 	{
-		if (current_str.find("Checksum:") == string::npos)
+		if (current_str.find("Define constants") == string::npos)
 		{
-			if (current_str.find("Углы между монополями:") != string::npos) {_antenna.inputPar.findDIPOLE = true;}
-
-			getline(fileFinish, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();
+			if (current_str.find("RADIATOR") != string::npos)  {_antenna.inputPar.findRADIATOR  = true;}
+			if (current_str.find("FEED") != string::npos)      {_antenna.inputPar.findFEED      = true;}
+			if (current_str.find("SUBSTRATE") != string::npos) {_antenna.inputPar.findSUBSTRATE = true;}
+			if (current_str.find("GROUND") != string::npos)    {_antenna.inputPar.findGROUND    = true;}
+			getline(fileFinishEnd, current_str);
 		}
 		else
 		{
 			findFinish = true;
-			fileFinish.close();
+			fileFinishEnd.close();
 			break;
 		}
 	}
-	if (!findFinish) 
+	if (!findFinish || !_antenna.inputPar.findRADIATOR) 
 	{
 		_antenna.aborted = true;
 		return;
@@ -1240,215 +1316,183 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 	{
 		while(!(file.eof()))
 		{
-			while (current_str.find("Физические") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
+			while (current_str.find("TYPE") == string::npos) {getline(file, current_str);}
 			{
 				getline(file, current_str);
 				stringstream ss(current_str);
 				vs.clear();
 				while (ss >> word) vs.push_back(word);
-				if (vs[1] == "True")		_antenna.inputPar.dipole = true;
-				else						_antenna.inputPar.dipole = false;
-				if (vs[2] == "проволочный") _antenna.type = WIRE;
-				_antenna.inputPar.Scale = std::stod(vs[3]);
-				_antenna.inputPar.Radius = std::stod(vs[4]);
+				if (vs[1] == "wire") _antenna.type = WIRE;
+				if (vs[1] == "stripe") _antenna.type = STRIPE;
+				if (vs[1] == "plane") _antenna.type = PLANE;
 			}
 
-			if (_antenna.inputPar.findDIPOLE)
+			if (_antenna.inputPar.findRADIATOR)
 			{
-				while (current_str.find("Углы между монополями:") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				_antenna.inputPar.AngleDipoleX = stod(vs[1]);
-				_antenna.inputPar.AngleDipoleY = stod(vs[2]);
-				_antenna.inputPar.AngleDipoleZ = stod(vs[3]);
-			}
-
-			while (current_str.find("N, m") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				_antenna.inputPar.fr_N = stoi(vs[1]);
-				_antenna.inputPar.fr_m = stoi(vs[2]);
-			}
-			while (current_str.find("x[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_pX.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
+				while (current_str.find("RADIATOR") == string::npos) {getline(file, current_str);}
+				while (current_str.find("ScaleX") == string::npos) {getline(file, current_str);}
 				{
-					_antenna.inputPar.fr_pX.push_back(stod(vs[i]));
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Radiator.ScaleX = stod(vs[1]);
+					_antenna.inputPar.Radiator.ScaleY = stod(vs[2]);
+					_antenna.inputPar.Radiator.Radius_StripWidth_FeedLineWidth = stod(vs[3]);
 				}
-			}
-			while (current_str.find("y[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_pY.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
+				while (current_str.find("N, m:") == string::npos) {getline(file, current_str);}
 				{
-					_antenna.inputPar.fr_pY.push_back(stod(vs[i]));
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Radiator.fr_N = stoi(vs[1]);
+					_antenna.inputPar.Radiator.fr_m = stoi(vs[2]);
 				}
-			}
-			while (current_str.find("t[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_pT.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
+				while (current_str.find("x[]") == string::npos) {getline(file, current_str);}
 				{
-					_antenna.inputPar.fr_pT.push_back(stod(vs[i]));
-				}
-			}
-
-			while (current_str.find("D11[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_D11.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					_antenna.inputPar.fr_D11.push_back(stod(vs[i]));
-				}
-			}
-			while (current_str.find("D12[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_D12.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					_antenna.inputPar.fr_D12.push_back(stod(vs[i]));
-				}
-			}
-			while (current_str.find("D21[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_D21.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					_antenna.inputPar.fr_D21.push_back(stod(vs[i]));
-				}
-			}
-			while (current_str.find("D22[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_D22.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					_antenna.inputPar.fr_D22.push_back(stod(vs[i]));
-				}
-			}
-
-			while (current_str.find("lam[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_lam.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					_antenna.inputPar.fr_lam.push_back(stod(vs[i]));
-				}
-			}
-			while (current_str.find("al[]") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				stringstream ss(current_str);
-				vs.clear();
-				_antenna.inputPar.fr_al.clear();
-				while (ss >> word) vs.push_back(word);
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					_antenna.inputPar.fr_al.push_back(stod(vs[i]));
-				}
-			}
-
-			while (current_str.find("точек префрактала 1-ого порядка") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				size_t s_ = 0;
-				while (s_ < current_str.size())
-				{
-					if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_pX.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
 					{
-						current_str.erase(current_str.begin() + s_);
-						continue;
-					}
-					++s_;
-				}
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				_antenna.inputPar.fr_pred1X.clear();
-				_antenna.inputPar.fr_pred1Y.clear();
-				for (size_t i=1; i<vs.size(); ++i)
-				{
-					if (i%2 == 0)
-					{
-						_antenna.inputPar.fr_pred1Y.push_back(stod(vs[i]));
-					}
-					if (i%2 == 1)
-					{
-						_antenna.inputPar.fr_pred1X.push_back(stod(vs[i]));
+						_antenna.inputPar.Radiator.fr_pX.push_back(stod(vs[i]));
 					}
 				}
-			}
-
-			while (current_str.find("точек префрактала m-ого порядка") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				size_t s_ = 0;
-				while (s_ < current_str.size())
+				while (current_str.find("y[]") == string::npos) {getline(file, current_str);}
 				{
-					if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',' || current_str[s_] == '*')
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_pY.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
 					{
-						current_str.erase(current_str.begin() + s_);
-						continue;
+						_antenna.inputPar.Radiator.fr_pY.push_back(stod(vs[i]));
 					}
-					++s_;
 				}
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				_antenna.inputPar.fr_predmX.clear();
-				_antenna.inputPar.fr_predmY.clear();
-				while (vs.size()>0)
+				while (current_str.find("t[]") == string::npos) {getline(file, current_str);}
 				{
-					for (size_t i=0; i<vs.size(); ++i)
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_pT.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_pT.push_back(stod(vs[i]));
+					}
+				}
+				while (current_str.find("D11[]") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_D11.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_D11.push_back(stod(vs[i]));
+					}
+				}
+				while (current_str.find("D12[]") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_D12.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_D12.push_back(stod(vs[i]));
+					}
+				}
+				while (current_str.find("D21[]") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_D21.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_D21.push_back(stod(vs[i]));
+					}
+				}
+				while (current_str.find("D22[]") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_D22.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_D22.push_back(stod(vs[i]));
+					}
+				}
+
+				while (current_str.find("lam[]") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_lam.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_lam.push_back(stod(vs[i]));
+					}
+				}
+				while (current_str.find("al[]") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					_antenna.inputPar.Radiator.fr_al.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						_antenna.inputPar.Radiator.fr_al.push_back(stod(vs[i]));
+					}
+				}
+				while (current_str.find("first order prefractal") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					size_t s_ = 0;
+					while (s_ < current_str.size())
+					{
+						if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
+						{
+							current_str.erase(current_str.begin() + s_);
+							continue;
+						}
+						++s_;
+					}
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Radiator.fr_pred1X.clear();
+					_antenna.inputPar.Radiator.fr_pred1Y.clear();
+					for (size_t i=1; i<vs.size(); ++i)
 					{
 						if (i%2 == 0)
 						{
-							_antenna.inputPar.fr_predmX.push_back(stod(vs[i]));
+							_antenna.inputPar.Radiator.fr_pred1Y.push_back(stod(vs[i]));
 						}
 						if (i%2 == 1)
 						{
-							_antenna.inputPar.fr_predmY.push_back(stod(vs[i]));
+							_antenna.inputPar.Radiator.fr_pred1X.push_back(stod(vs[i]));
 						}
 					}
-					getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();
-					s_ = 0;
+				}
+
+				while (current_str.find("m-th order prefractal") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					size_t s_ = 0;
 					while (s_ < current_str.size())
 					{
 						if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',' || current_str[s_] == '*')
@@ -1458,60 +1502,99 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 						}
 						++s_;
 					}
-					stringstream ss1(current_str);
+					stringstream ss(current_str);
 					vs.clear();
-					while (ss1 >> word) vs.push_back(word);
-				}
-			}
-
-
-			while (current_str.find("#dlin=") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				while (vs[0][0] != '=') vs[0].erase(vs[0].begin() + 0);
-				vs[0].erase(vs[0].begin() + 0);
-				_antenna.inputPar.dlin = stod(vs[0]);
-			}
-			while (current_str.find("#seg_len=") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				while (vs[0][0] != '=') vs[0].erase(vs[0].begin() + 0);
-				vs[0].erase(vs[0].begin() + 0);
-				_antenna.inputPar.seg_len = stod(vs[0]);
-			}
-			while (current_str.find("#seg_rad=") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				stringstream ss(current_str);
-				vs.clear();
-				while (ss >> word) vs.push_back(word);
-				while (vs[0][0] != '=') vs[0].erase(vs[0].begin() + 0);
-				vs[0].erase(vs[0].begin() + 0);
-				_antenna.inputPar.seg_rad = stod(vs[0]);
-			}
-
-			while (current_str.find("Устанавливаем частоты анализа:") == string::npos) {getline(file, current_str); QString qstr(current_str.c_str()); current_str = qstr.toLocal8Bit().constData();}
-			{
-				getline(file, current_str);
-				size_t s_ = 0;
-				while (s_ < current_str.size())
-				{
-					if (current_str[s_] == ':')
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Radiator.fr_predmX.clear();
+					_antenna.inputPar.Radiator.fr_predmY.clear();
+					for (size_t i=0; i<vs.size(); ++i)
 					{
-						current_str.erase(current_str.begin() + s_);
-						continue;
+						if (i%2 == 0)
+						{
+							_antenna.inputPar.Radiator.fr_predmX.push_back(stod(vs[i]));
+						}
+						if (i%2 == 1)
+						{
+							_antenna.inputPar.Radiator.fr_predmY.push_back(stod(vs[i]));
+						}
 					}
-					++s_;
 				}
-				vs.clear();
-				stringstream ss(current_str);
-				while (ss >> word) vs.push_back(word);
-				_antenna.inputPar.Fnum = stod(vs[1]);
-				_antenna.inputPar.Fmin = stod(vs[3]);
-				_antenna.inputPar.Fmax = stod(vs[4]);
+			}
+
+			if (_antenna.inputPar.findFEED)
+			{
+				while (current_str.find("FEED") == string::npos) {getline(file, current_str);}
+				while (current_str.find("Coordinates of feedpoint:") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Feed.FeedX = stod(vs[1]);
+					_antenna.inputPar.Feed.FeedY = stod(vs[2]);
+				}
+			}
+
+			if (_antenna.inputPar.findSUBSTRATE)
+			{
+				while (current_str.find("SUBSTRATE") == string::npos) {getline(file, current_str);}
+				while (current_str.find("permittivity") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Substrate.Permittivity = stod(vs[1]);
+					_antenna.inputPar.Substrate.LossTangent = stod(vs[2]);
+					_antenna.inputPar.Substrate.Density = stod(vs[3]);
+					_antenna.inputPar.Substrate.Thickness = stod(vs[4]);
+				}
+				while (current_str.find("coordinate:") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Substrate.CoorLeftUpX = stod(vs[1]);
+					_antenna.inputPar.Substrate.CoorLeftUpY = stod(vs[2]);
+					_antenna.inputPar.Substrate.CoorRightDownX = stod(vs[3]);
+					_antenna.inputPar.Substrate.CoorRightDownY = stod(vs[4]);
+				}
+			}
+
+			if (_antenna.inputPar.findGROUND)
+			{
+				while (current_str.find("GROUND") == string::npos) {getline(file, current_str);}
+				while (current_str.find("of ground:") == string::npos) {getline(file, current_str);}
+				{
+					getline(file, current_str);
+					size_t s_ = 0;
+					while (s_ < current_str.size())
+					{
+						if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
+						{
+							current_str.erase(current_str.begin() + s_);
+							continue;
+						}
+						++s_;
+					}
+					stringstream ss(current_str);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					_antenna.inputPar.Ground.coordX.clear();
+					_antenna.inputPar.Ground.coordY.clear();
+					for (size_t i=1; i<vs.size(); ++i)
+					{
+						if (i%2 == 0)
+						{
+							_antenna.inputPar.Ground.coordY.push_back(stod(vs[i]));
+						}
+						if (i%2 == 1)
+						{
+							_antenna.inputPar.Ground.coordX.push_back(stod(vs[i]));
+						}
+					}
+				}
 			}
 
 			break;

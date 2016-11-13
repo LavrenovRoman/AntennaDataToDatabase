@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AntennaDataToDatabase", "AntennaDataToDatabase\AntennaDataToDatabase.vcxproj", "{547AC17E-E15B-4E0A-95F4-0BF8A75BDC77}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B1434FAE-5D59-4FEE-9077-DDA7E673A61C} = {B1434FAE-5D59-4FEE-9077-DDA7E673A61C}
@@ -9,6 +11,16 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AntennaDataToDatabaseCore", "AntennaDataToDatabaseCore\AntennaDataToDatabaseCore.vcxproj", "{B1434FAE-5D59-4FEE-9077-DDA7E673A61C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AntennaDataToDatabaseCmd", "AntennaDataToDatabaseCmd\AntennaDataToDatabaseCmd.vcxproj", "{CE83366C-5BFC-4E8F-A54E-388FBC2DF2B7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B1434FAE-5D59-4FEE-9077-DDA7E673A61C} = {B1434FAE-5D59-4FEE-9077-DDA7E673A61C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AntennaDataViewer", "AntennaDataViewer\AntennaDataViewer.vcxproj", "{B12702AD-ABFB-343A-A199-8E24837244A3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B1434FAE-5D59-4FEE-9077-DDA7E673A61C} = {B1434FAE-5D59-4FEE-9077-DDA7E673A61C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CopyDB", "CopyDB\CopyDB.vcxproj", "{11485028-3C4F-4269-95F3-3F837C9E82AA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B1434FAE-5D59-4FEE-9077-DDA7E673A61C} = {B1434FAE-5D59-4FEE-9077-DDA7E673A61C}
 	EndProjectSection
@@ -47,8 +59,27 @@ Global
 		{CE83366C-5BFC-4E8F-A54E-388FBC2DF2B7}.Release|Win32.ActiveCfg = Release|Win32
 		{CE83366C-5BFC-4E8F-A54E-388FBC2DF2B7}.Release|Win32.Build.0 = Release|Win32
 		{CE83366C-5BFC-4E8F-A54E-388FBC2DF2B7}.Release|x64.ActiveCfg = Release|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|ARM.ActiveCfg = Debug|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|Win32.Build.0 = Debug|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Debug|x64.ActiveCfg = Debug|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|ARM.ActiveCfg = Release|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|Win32.ActiveCfg = Release|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|Win32.Build.0 = Release|Win32
+		{B12702AD-ABFB-343A-A199-8E24837244A3}.Release|x64.ActiveCfg = Release|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Debug|ARM.ActiveCfg = Debug|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Debug|Win32.Build.0 = Debug|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Debug|x64.ActiveCfg = Debug|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Release|ARM.ActiveCfg = Release|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Release|Win32.ActiveCfg = Release|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Release|Win32.Build.0 = Release|Win32
+		{11485028-3C4F-4269-95F3-3F837C9E82AA}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		Qt5Version = Qt5.4static
 	EndGlobalSection
 EndGlobal

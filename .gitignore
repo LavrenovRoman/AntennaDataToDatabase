@@ -1,6 +1,6 @@
 /AntennaDataToDatabase/Debug/
-/AntennaDataToDatabase/GeneratedFiles/
 /AntennaDataToDatabase/Release/
+/AntennaDataToDatabase/GeneratedFiles/
 /AntennaDataToDatabase.sdf
 /AntennaDataToDatabase.v12.suo
 /AntennaDataToDatabase/Options.ini
@@ -25,4 +25,5 @@
 /lib/AntennaDataToDatabaseCore32.pdb
 /lib/AntennaDataToDatabaseCore32d.exp
 /lib/AntennaDataToDatabaseCore32d.ilk
+/lib/AntennaDataToDatabaseCore32d.pdb
 /lib/AntennaDataToDatabaseCore32d.pdb
