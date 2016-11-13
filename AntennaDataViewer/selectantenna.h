@@ -26,10 +26,6 @@ signals:
 private:
 	SelectAll * pkCoreData;
 	Ui::DialogAntenna ui;
-	//std::vector<int> ids;
-	//std::vector<int> antsids;
-	//std::vector<Experiment> exps;
-	//std::vector<Antenna> ants; 
 
 	private slots:
 	void ExpChanged(int expChange);

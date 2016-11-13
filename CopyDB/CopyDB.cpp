@@ -77,20 +77,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	cout << "Success!" << endl;
 	cout << "Copied " << cnt << " experiments" << endl;
-	/*
-	if (core.ConnectDatabase() == 0) {
-		if (core.OpenDirectory(strdir, cntOutFiles, cntPreFiles) == 0) {
-			if (core.ReadFiles() == 0) {
-				if (core.WriteData() == 0)
-				{
-					cout << "Success!" << endl;
-					return 0;
-				}
-			}
-		}
-	}
-	cout << "Exit with Error!" << endl;
-	*/
 	system("pause");
 	return 0;
 }

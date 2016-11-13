@@ -733,15 +733,7 @@ void AntennaDataViewer::CreateGraph()
 
 			QString pointtext;
 			if (!parInsideAntenna && viewDataExp.size() > selectedPoints[i])
-			{/*
-				pointtext = QString::fromLocal8Bit("PosX: ") + QString::number(posx) +
-				QString::fromLocal8Bit("\n PosY: ") + QString::number(posy) +
-				QString::fromLocal8Bit("\n P: ") + QString::number(selectedPoint) +
-				QString::fromLocal8Bit("\n X: ") + QString::number(stdx[selectedPoint]) +
-				QString::fromLocal8Bit("\n Y: ") + QString::number(stdy[selectedPoint]) +
-				QString::fromLocal8Bit("\n Э: ") + QString::number(viewDataExp[selectedPoint].IdExperiment) +
-				QString::fromLocal8Bit("\n А: ") + QString::number(viewDataExp[selectedPoint].IdAntenna);
-				*/
+			{
 				pointtext = QString::fromLocal8Bit("Эксперимент: ") + QString::number(viewDataExp[selectedPoints[i]].IdExperiment) +
 					QString::fromLocal8Bit("\n Антенна: ") + QString::number(viewDataExp[selectedPoints[i]].IdAntenna);
 			}
@@ -749,11 +741,9 @@ void AntennaDataViewer::CreateGraph()
 			QCPItemText *textLabel = new QCPItemText(ui.PlotWidget);
 			ui.PlotWidget->addItem(textLabel);
 			textLabel->setPositionAlignment(Qt::AlignTop | Qt::AlignHCenter);
-			//textLabel->position->setType(QCPItemPosition::ptAxisRectRatio);
 			textLabel->position->setPixelPoint(posF);
 			textLabel->setText(pointtext);
 			textLabel->setFont(QFont(font().family(), 8)); // make font a bit larger
-			//textLabel->setPen(QPen(Qt::black)); // show black border around text
 		}
 	}
 

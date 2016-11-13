@@ -42,20 +42,12 @@ int Core::SetDonorDB()
 
 int Core::ConnectDatabase()
 {
-	//std::string Path = ExtractFileDir(Application->ExeName);
-	//QString dir = QCoreApplication::applicationFilePath();
 	char pth[FILENAME_MAX] = { 0 };
 	GetModuleFileName(NULL, pth, FILENAME_MAX);
 	char* p = strrchr(pth, '\\');
 	if (p) *(p + 1) = 0;
 	else pth[0] = 0;
-
-	std::string m_pathmain = pth;
-
-
-	//char current_work_dir[FILENAME_MAX];
-	//_getcwd(current_work_dir, sizeof(current_work_dir));
-
+	
 	char current_work_dir_[FILENAME_MAX];
 	int j = 0;
 	for (int i = 0; i < sizeof(pth); ++i)
@@ -92,7 +84,7 @@ int Core::ConnectDatabase()
 	}
 	string login = "SYSDBA";//sett.value("Login").toString().toStdString();
 	string password = "masterkey";//sett.value("Password").toString().toStdString();
-	if (path == ""/* || login == "" || password == ""*/)
+	if (path == "")
 	{
 		cout << "Error! Can not find file Options.ini" << endl;
 		return -1;
@@ -188,17 +180,6 @@ int Core::ReadFiles()
 		{
 			Antenna newAntenna;
 			antennas.push_back(newAntenna);
-			//for (int j=0; j<pres.size(); ++j)
-			//{
-			//	if (outs[i].left(outs[i].indexOf('.')) == pres[j].left(pres[j].indexOf('.')))
-			//	{
-			//		QString name = pre_names.at(i).toLocal8Bit();
-			//		cout << name.toStdString() << endl;
-			//		QString file = pres[j];
-			//		parseFeko.ParseFilePre(file, antennas[i]);
-			//		break;
-			//	}
-			//}
 
 			antennas[i].aborted = false;
 

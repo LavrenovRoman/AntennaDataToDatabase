@@ -64,7 +64,6 @@ void SelectAntenna::ExpChanged(int expChange)
 
 		IdExperiment = pkCoreData->GetExpsID()->at(expChange);
 
-		//pkCore->GetAntennasByExperiment(ants, antsids, IdExperiment);
 		ui.listWidget_2->clear();
 		for (int i = 0; i<pkCoreData->GetAntsID()->at(expChange).size(); ++i)
 		{
