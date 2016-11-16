@@ -63,9 +63,13 @@ private:
 	int IdAntenna;
 	bool parInsideAntenna;
 	std::vector<int> selectedPoints;
-	std::vector<int> selectedPars;
 	std::vector<ViewDataExp> viewDataExp;
 	SelectedArea selectedArea;
+	int selectedY;
+	
+	int currentMode;
+	int currentInput;
+	int currentOutput;
 
 private slots:
 	void ClickedCalcCorr();

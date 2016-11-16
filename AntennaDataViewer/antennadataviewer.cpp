@@ -51,10 +51,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 		{
 			ui.listDBSelect->insertItem(i, selectPars[i]);
 		}
-
-		ui.listDBSelect->item(0)->setSelected(true);
-		parInsideAntenna = false;
-
+		
 		pSelEx = new SelectExperiment(pSelAll, this);
 		connect(pSelEx, SIGNAL(ExperimentOk()), this, SLOT(ExperimentOk()));
 		connect(pSelEx, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
@@ -69,6 +66,12 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 		connect(pSelExAnt, SIGNAL(SelectExpAntOk()), this, SLOT(SelectExpAntOk()));
 		//connect(pSelAnt, SIGNAL(Cancel()), this, SLOT(SelectExpAntCancel()));
 		pSelExAnt->setVisible(false);
+
+		currentInput  = -1;
+		currentOutput = -1;
+
+		currentMode = -1;
+		DBRowChanged(ui.listDBSelect->item(0));
 	}
 	else
 	{
@@ -78,11 +81,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	IdExperiment = -1;
 	IdAntenna = -1;
 	selectedPoints.clear();
-
-	selectedPars.push_back(-1);
-	selectedPars.push_back(-1);
-
-	CreateLists();
+	selectedY = -1;
 }
 
 void AntennaDataViewer::CreateLists()
@@ -117,8 +116,8 @@ void AntennaDataViewer::CreateLists()
 		ui.listParOutput->insertItem(i, outputPars[i]);
 	}
 
-	selectedPars[0] = -1;
-	selectedPars[1] = -1;
+	currentInput = -1;
+	currentOutput = -1;
 	selectedPoints.clear();
 }
 
@@ -144,11 +143,10 @@ void AntennaDataViewer::ClickedCalcCorr()
 		QMessageBox::information(NULL,QString::fromLocal8Bit("Ошибка"),QString::fromLocal8Bit("Выберите хотя бы один выходной параметр"));
 		return;
 	}
-	int selectInputPar = ui.listParInput->row(inputList.at(0));
-	int selectOutputPar = ui.listParOutput->row(outputList.at(0));
-
-	selectedPars[0] = selectInputPar;
-	selectedPars[1] = selectOutputPar;
+	QList<QListWidgetItem *> dbList = ui.listDBSelect->selectedItems();
+	currentMode = ui.listDBSelect->row(dbList.at(0));
+	currentInput = ui.listParInput->row(inputList.at(0));
+	currentOutput = ui.listParOutput->row(outputList.at(0));
 
 	res.clear();
 	vector<double> temp;
@@ -169,7 +167,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 				viewDataExp.push_back(vde);
 
 				double minS11, minS11W;
-				if (selectOutputPar == 2 || selectOutputPar == 3)
+				if (currentOutput == 2 || currentOutput == 3)
 				{
 					minS11 = 1000000;
 					for (int k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
@@ -182,7 +180,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 					}
 				}
 
-				switch (selectInputPar)
+				switch (currentInput)
 				{
 				case 0:
 					res[0].push_back(_ant.inputPar.Radiator.ScaleX);
@@ -193,7 +191,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 				default:
 					break;
 				}
-				switch (selectOutputPar)
+				switch (currentOutput)
 				{
 				case 0:
 					res[1].push_back(_ant.outputPar.fst_s11);
@@ -224,7 +222,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 				Antenna _ant = pSelAll->GetAnts()->at(i).at(j);
 				for (int k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
 				{
-					switch (selectInputPar)
+					switch (currentInput)
 					{
 					case 0:
 						res[0].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[0].Frequency);
@@ -232,7 +230,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 					default:
 						break;
 					}
-					switch (selectOutputPar)
+					switch (currentOutput)
 					{
 					case 0:
 						res[1].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._SCATTERING_PARAMETERS.S11);
@@ -358,8 +356,8 @@ void AntennaDataViewer::ClickedCalcCorr()
 	core.Request(request, 2, res);
 	*/
 
-	xGraphTitle = ui.listParInput->item(selectInputPar)->text();
-	yGraphTitle = ui.listParOutput->item(selectOutputPar)->text();
+	xGraphTitle = ui.listParInput->item(currentInput)->text();
+	yGraphTitle = ui.listParOutput->item(currentOutput)->text();
 
 	selectedPoints.clear();
 
@@ -421,9 +419,23 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 		}
 	}
 
+	if (currentMode == selectRow)
+	{
+		ui.listDBSelect->item(0)->setSelected(false);
+		ui.listDBSelect->item(1)->setSelected(false);
+		ui.listDBSelect->item(2)->setSelected(false);
+		ui.listDBSelect->item(3)->setSelected(false);
+		ui.listDBSelect->item(currentMode)->setSelected(true);
+		pSelEx->setVisible(false);
+		pSelAnt->setVisible(false);
+		pSelExAnt->setVisible(false);
+		return;
+	}
+
 	switch (selectRow)
 	{
 	case 0:
+		currentMode = 0;
 		ui.listDBSelect->item(0)->setSelected(true);
 		ui.listDBSelect->item(1)->setSelected(false);
 		ui.listDBSelect->item(2)->setSelected(false);
@@ -477,20 +489,9 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	}
 }
 
-void AntennaDataViewer::AntennaOk()
-{
-	ui.listDBSelect->item(0)->setSelected(false);
-	ui.listDBSelect->item(1)->setSelected(false);
-	ui.listDBSelect->item(2)->setSelected(true);
-	ui.listDBSelect->item(3)->setSelected(false);
-	parInsideAntenna = true;
-	IdExperiment = pSelAnt->IdExperiment;
-	IdAntenna = pSelAnt->IdAntenna;
-	CreateLists();
-}
-
 void AntennaDataViewer::ExperimentOk()
 {
+	currentMode = 1;
 	ui.listDBSelect->item(0)->setSelected(false);
 	ui.listDBSelect->item(1)->setSelected(true);
 	ui.listDBSelect->item(2)->setSelected(false);
@@ -501,9 +502,22 @@ void AntennaDataViewer::ExperimentOk()
 	CreateLists();
 }
 
+void AntennaDataViewer::AntennaOk()
+{
+	currentMode = 2;
+	ui.listDBSelect->item(0)->setSelected(false);
+	ui.listDBSelect->item(1)->setSelected(false);
+	ui.listDBSelect->item(2)->setSelected(true);
+	ui.listDBSelect->item(3)->setSelected(false);
+	parInsideAntenna = true;
+	IdExperiment = pSelAnt->IdExperiment;
+	IdAntenna = pSelAnt->IdAntenna;
+	CreateLists();
+}
+
 void AntennaDataViewer::ExperimentCancel()
 {
-	DBRowChanged(ui.listDBSelect->item(0));
+	DBRowChanged(ui.listDBSelect->item(currentMode));
 }
 
 void AntennaDataViewer::SelectExpAntOk()
@@ -542,6 +556,10 @@ void AntennaDataViewer::PlotMousePress(QMouseEvent *event)
 				CreateGraph();
 			}
 		}
+		if (!parInsideAntenna)
+		{
+			selectedY = -1;
+		}
 	}
 }
 
@@ -578,6 +596,18 @@ void AntennaDataViewer::PlotMouseRelease(QMouseEvent *event)
 			selectedArea.Reset();
 			CreateGraph();
 		}
+		else
+		{
+			switch (currentInput)
+			{
+			case 0:
+				selectedY = event->y();
+				CreateGraph();
+				break;
+			default:
+				break;
+			}
+		}
 	}
 }
 
@@ -610,30 +640,33 @@ void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
 		}
 		else
 		{
-			if (selectedPars[0] == -1 || selectedPars[1] == -1) return;
+			if (!parInsideAntenna)
+			{
+				if (currentInput == -1 || currentOutput == -1) return;
 
-			int changedpoint = -1;
-			double length, minL, distx, disty;
-			minL = 100000000;
-			for (int i = 0; i < linePixelData.size(); ++i)
-			{
-				distx = event->x() - linePixelData[i].x();
-				disty = event->y() - linePixelData[i].y();
-				distx *= distx;
-				disty *= disty;
-				length = sqrt(distx + disty);
-				if (length < minL)
+				int changedpoint = -1;
+				double length, minL, distx, disty;
+				minL = 100000000;
+				for (int i = 0; i < linePixelData.size(); ++i)
 				{
-					minL = length;
-					changedpoint = i;
+					distx = event->x() - linePixelData[i].x();
+					disty = event->y() - linePixelData[i].y();
+					distx *= distx;
+					disty *= disty;
+					length = sqrt(distx + disty);
+					if (length < minL)
+					{
+						minL = length;
+						changedpoint = i;
+					}
 				}
-			}
-			if (!selectedPoints.empty() && selectedPoints[0] == changedpoint) return;
-			else
-			{
-				if (!selectedPoints.empty()) selectedPoints.clear();
-				selectedPoints.push_back(changedpoint);
-				CreateGraph();
+				if (!selectedPoints.empty() && selectedPoints[0] == changedpoint) return;
+				else
+				{
+					if (!selectedPoints.empty()) selectedPoints.clear();
+					selectedPoints.push_back(changedpoint);
+					CreateGraph();
+				}
 			}
 		}
 	}
@@ -648,7 +681,7 @@ void AntennaDataViewer::CreateGraph()
 	y = QVector<double>::fromStdVector(res[1]);
 	if (!parInsideAntenna)
 	{
-		switch (selectedPars[1])
+		switch (currentOutput)
 		{
 		case 0:
 			for (int k = 0; k < y.size(); k++)	{y[k] = 10 * log10(y[k]);}
@@ -668,7 +701,7 @@ void AntennaDataViewer::CreateGraph()
 	}
 	else
 	{
-		switch (selectedPars[0])
+		switch (currentInput)
 		{
 		case 0:
 			for (int k = 0; k < x.size(); k++) {x[k] /= 1000000;}
@@ -676,7 +709,7 @@ void AntennaDataViewer::CreateGraph()
 		default:
 			break;
 		}
-		switch (selectedPars[1])
+		switch (currentOutput)
 		{
 		case 0:
 			for (int k = 0; k < y.size(); k++) {y[k] = 10 * log10(y[k]); }
@@ -790,6 +823,17 @@ void AntennaDataViewer::CreateGraph()
 		line4->start->setPixelPoint(pos4s);
 		QPointF pos4f(selectedArea.Corner2X, selectedArea.Corner2Y);
 		line4->end->setPixelPoint(pos4f);
+	}
+	if (selectedY != -1)
+	{
+		QCPItemLine *line = new QCPItemLine(ui.PlotWidget);
+		ui.PlotWidget->addItem(line);
+		QPointF poss(0, selectedY);
+		line->start->setPixelPoint(poss);
+		QPointF posf(1000, selectedY);
+		line->end->setPixelPoint(posf);
+
+		selectedY = -1;
 	}
  
     //Подписываем оси Ox и Oy
