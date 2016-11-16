@@ -14,6 +14,7 @@
 /AntennaDataToDatabaseCmd/Win32/
 /AntennaDataToDatabaseCore/Debug/
 /AntennaDataToDatabaseCore/Release/
+/AntennaDataToDatabaseCore/Options.ini
 /AntennaDataViewer/Debug/
 /AntennaDataViewer/GeneratedFiles/
 /AntennaDataViewer/Options.ini
