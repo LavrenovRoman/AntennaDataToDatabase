@@ -65,7 +65,7 @@ private:
 	std::vector<int> selectedPoints;
 	std::vector<ViewDataExp> viewDataExp;
 	SelectedArea selectedArea;
-	int selectedY;
+	double selectedY;
 	
 	int currentMode;
 	int currentInput;

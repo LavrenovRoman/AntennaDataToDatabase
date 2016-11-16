@@ -81,7 +81,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	IdExperiment = -1;
 	IdAntenna = -1;
 	selectedPoints.clear();
-	selectedY = -1;
+	selectedY = -1.0;
 }
 
 void AntennaDataViewer::CreateLists()
@@ -419,19 +419,6 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 		}
 	}
 
-	if (currentMode == selectRow)
-	{
-		ui.listDBSelect->item(0)->setSelected(false);
-		ui.listDBSelect->item(1)->setSelected(false);
-		ui.listDBSelect->item(2)->setSelected(false);
-		ui.listDBSelect->item(3)->setSelected(false);
-		ui.listDBSelect->item(currentMode)->setSelected(true);
-		pSelEx->setVisible(false);
-		pSelAnt->setVisible(false);
-		pSelExAnt->setVisible(false);
-		return;
-	}
-
 	switch (selectRow)
 	{
 	case 0:
@@ -517,7 +504,14 @@ void AntennaDataViewer::AntennaOk()
 
 void AntennaDataViewer::ExperimentCancel()
 {
-	DBRowChanged(ui.listDBSelect->item(currentMode));
+	ui.listDBSelect->item(0)->setSelected(false);
+	ui.listDBSelect->item(1)->setSelected(false);
+	ui.listDBSelect->item(2)->setSelected(false);
+	ui.listDBSelect->item(3)->setSelected(false);
+	ui.listDBSelect->item(currentMode)->setSelected(true);
+	pSelEx->setVisible(false);
+	pSelAnt->setVisible(false);
+	pSelExAnt->setVisible(false);
 }
 
 void AntennaDataViewer::SelectExpAntOk()
@@ -558,7 +552,7 @@ void AntennaDataViewer::PlotMousePress(QMouseEvent *event)
 		}
 		if (!parInsideAntenna)
 		{
-			selectedY = -1;
+			selectedY = -1.0;
 		}
 	}
 }
@@ -824,16 +818,81 @@ void AntennaDataViewer::CreateGraph()
 		QPointF pos4f(selectedArea.Corner2X, selectedArea.Corner2Y);
 		line4->end->setPixelPoint(pos4f);
 	}
-	if (selectedY != -1)
+	if (selectedY != -1.0)
 	{
+		/*
 		QCPItemLine *line = new QCPItemLine(ui.PlotWidget);
 		ui.PlotWidget->addItem(line);
 		QPointF poss(0, selectedY);
 		line->start->setPixelPoint(poss);
 		QPointF posf(1000, selectedY);
 		line->end->setPixelPoint(posf);
+		*/
 
-		selectedY = -1;
+		QVector<QPointF> linePixelData;
+		QVector<QCPData> scatterData;
+		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
+
+		int minY = 1000;
+		for (int i = 0; i < linePixelData.size(); ++i)
+		{
+			if (linePixelData[i].y() < minY)
+				minY = linePixelData[i].y();
+		}
+
+		if (selectedY > minY)
+		{
+			int c = 0;
+			while (c < linePixelData.size())
+			{
+				int p1, p2, p3, p4 = -1;
+				for (int i = c; i < linePixelData.size(); ++i, ++c)
+				{
+					if (linePixelData[i].y() < selectedY) p1 = i;
+					else
+					{
+						p2 = i;
+						p3 = i;
+						break;
+					}
+				}
+				for (int i = c; i < linePixelData.size(); ++i, ++c)
+				{
+					if (linePixelData[i].y() > selectedY) p3 = i;
+					else
+					{
+						p4 = i;
+						break;
+					}
+				}
+				if (p4 != -1 && p3 != -1 && p2 != -1 && p1 != -1)
+				{
+					double x1 = (linePixelData[p1].x()*linePixelData[p2].y() - linePixelData[p2].x()*linePixelData[p1].y() + selectedY*(linePixelData[p2].x() - linePixelData[p1].x())) / (linePixelData[p2].y() - linePixelData[p1].y());
+					double x2 = (linePixelData[p4].x()*linePixelData[p3].y() - linePixelData[p3].x()*linePixelData[p4].y() + selectedY*(linePixelData[p3].x() - linePixelData[p4].x())) / (linePixelData[p3].y() - linePixelData[p4].y());
+					double U = (stdx[p2] - stdx[p1])*(x2 - x1) / (linePixelData[p2].x() - linePixelData[p1].x());
+
+					QPointF posF((x2+x1)/2, selectedY);
+					QString pointtext = QString::fromLocal8Bit("bw = ") + QString::number(U);
+					QCPItemText *textLabel = new QCPItemText(ui.PlotWidget);
+					ui.PlotWidget->addItem(textLabel);
+					textLabel->setPositionAlignment(Qt::AlignTop | Qt::AlignHCenter);
+					textLabel->position->setPixelPoint(posF);
+					textLabel->setText(pointtext);
+					textLabel->setFont(QFont(font().family(), 8)); // make font a bit larger
+					
+					QPointF posf1(x1, selectedY);
+					QPointF posf2(x2, selectedY);
+					QCPItemLine *arrow = new QCPItemLine(ui.PlotWidget);
+					ui.PlotWidget->addItem(arrow);
+					arrow->start->setPixelPoint(posf1);
+					arrow->end->setPixelPoint(posf2);
+					arrow->setTail(QCPLineEnding::esSpikeArrow);
+					arrow->setHead(QCPLineEnding::esSpikeArrow);
+				}
+			}
+		}
+
+		selectedY = -1.0;
 	}
  
     //Подписываем оси Ox и Oy
