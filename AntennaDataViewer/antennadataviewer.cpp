@@ -20,6 +20,11 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 {
 	ui.setupUi(this);
 
+	pSelAll = nullptr;
+	pSelEx = nullptr;
+	pSelAnt = nullptr;
+	pSelExAnt = nullptr;
+
 	ui.listParInput->setSelectionMode(QAbstractItemView::SingleSelection);
 	ui.listParOutput->setSelectionMode(QAbstractItemView::SingleSelection);
 	ui.listDBSelect->setSelectionMode(QListWidget::MultiSelection);
@@ -119,10 +124,10 @@ void AntennaDataViewer::CreateLists()
 
 AntennaDataViewer::~AntennaDataViewer()
 {
-	delete pSelAll;
-	delete pSelEx;
-	delete pSelAnt;
-	delete pSelExAnt;
+	if (pSelAll   != nullptr) delete pSelAll;
+	if (pSelEx    != nullptr) delete pSelEx;
+	if (pSelAnt   != nullptr) delete pSelAnt;
+	if (pSelExAnt != nullptr) delete pSelExAnt;
 }
 
 void AntennaDataViewer::ClickedCalcCorr()
@@ -522,51 +527,57 @@ void AntennaDataViewer::SelectExpAntOk()
 
 void AntennaDataViewer::PlotMousePress(QMouseEvent *event)
 {
-	if (event->buttons() == Qt::LeftButton && !parInsideAntenna)
+	if (event->buttons() == Qt::LeftButton)
 	{
-		if (selectedArea.Corner1X == -1 || selectedArea.Corner1Y == -1)
+		if (!parInsideAntenna)
 		{
-			selectedArea.Corner1X = event->x();
-			selectedArea.Corner1Y = event->y();
-			selectedArea.Corner2X = event->x();
-			selectedArea.Corner2Y = event->y();
+			if (selectedArea.Corner1X == -1 || selectedArea.Corner1Y == -1)
+			{
+				selectedArea.Corner1X = event->x();
+				selectedArea.Corner1Y = event->y();
+				selectedArea.Corner2X = event->x();
+				selectedArea.Corner2Y = event->y();
 
-			selectedPoints.clear();
-			CreateGraph();
+				selectedPoints.clear();
+				CreateGraph();
+			}
 		}
 	}
 }
 
 void AntennaDataViewer::PlotMouseRelease(QMouseEvent *event)
 {
-	if (event->button() == Qt::LeftButton && !parInsideAntenna)
+	if (event->button() == Qt::LeftButton)
 	{
-		selectedArea.Corner2X = event->x();
-		selectedArea.Corner2Y = event->y();
-
-		if (selectedPoints.size() > 0)
+		if (!parInsideAntenna)
 		{
-			std::vector<ViewDataExp> selectedDataExpAnt;
-			for (int i = 0; i < selectedPoints.size(); ++i)
+			selectedArea.Corner2X = event->x();
+			selectedArea.Corner2Y = event->y();
+
+			if (selectedPoints.size() > 0)
 			{
-				if (viewDataExp.size() > selectedPoints[i])
+				std::vector<ViewDataExp> selectedDataExpAnt;
+				for (int i = 0; i < selectedPoints.size(); ++i)
 				{
-					ViewDataExp newVDE(viewDataExp[selectedPoints[i]].IdExperiment, viewDataExp[selectedPoints[i]].IdAntenna);
-					selectedDataExpAnt.push_back(newVDE);
+					if (viewDataExp.size() > selectedPoints[i])
+					{
+						ViewDataExp newVDE(viewDataExp[selectedPoints[i]].IdExperiment, viewDataExp[selectedPoints[i]].IdAntenna);
+						selectedDataExpAnt.push_back(newVDE);
+					}
+					else
+					{
+						selectedArea.Reset();
+						CreateGraph();
+						return;
+					}
 				}
-				else
-				{
-					selectedArea.Reset();
-					CreateGraph();
-					return;
-				}
+				pSelExAnt->Reset(selectedDataExpAnt);
+				pSelExAnt->setVisible(true);
+				selectedPoints.clear();
 			}
-			pSelExAnt->Reset(selectedDataExpAnt);
-			pSelExAnt->setVisible(true);
-			selectedPoints.clear();
+			selectedArea.Reset();
+			CreateGraph();
 		}
-		selectedArea.Reset();
-		CreateGraph();
 	}
 }
 
@@ -578,21 +589,24 @@ void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
 		QVector<QCPData> scatterData;
 		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
 
-		if (event->buttons() == Qt::LeftButton  && !parInsideAntenna)
+		if (event->buttons() == Qt::LeftButton)
 		{
-			selectedArea.Corner2X = event->x();
-			selectedArea.Corner2Y = event->y();
-
-			selectedPoints.clear();
-
-			for (int i = 0; i < linePixelData.size(); ++i)
+			if (!parInsideAntenna)
 			{
-				if (selectedArea.IsInside(linePixelData[i].x(), linePixelData[i].y()))
+				selectedArea.Corner2X = event->x();
+				selectedArea.Corner2Y = event->y();
+
+				selectedPoints.clear();
+
+				for (int i = 0; i < linePixelData.size(); ++i)
 				{
-					selectedPoints.push_back(i);
+					if (selectedArea.IsInside(linePixelData[i].x(), linePixelData[i].y()))
+					{
+						selectedPoints.push_back(i);
+					}
 				}
+				CreateGraph();
 			}
-			CreateGraph();
 		}
 		else
 		{
