@@ -1351,171 +1351,275 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("x[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_pX.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_pX.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_pX.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_pX.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_pX.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("y[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_pY.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_pY.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_pY.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_pY.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_pY.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("t[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_pT.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_pT.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_pT.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_pT.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_pT.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("D11[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_D11.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_D11.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_D11.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_D11.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_D11.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("D12[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_D12.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_D12.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_D12.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_D12.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_D12.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("D21[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_D21.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_D21.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_D21.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_D21.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_D21.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("D22[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_D22.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_D22.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_D22.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_D22.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_D22.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 
 				while (current_str.find("lam[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_lam.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_lam.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_lam.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_lam.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_lam.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("al[]") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					stringstream ss(current_str);
-					vs.clear();
-					_antenna.inputPar.Radiator.fr_al.clear();
-					while (ss >> word) vs.push_back(word);
-					for (size_t i=1; i<vs.size(); ++i)
+					while (true)
 					{
-						_antenna.inputPar.Radiator.fr_al.push_back(stod(vs[i]));
+						getline(file, current_str);
+						stringstream ss(current_str);
+						vs.clear();
+						_antenna.inputPar.Radiator.fr_al.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i=1; i<vs.size() - 1; ++i)
+						{
+							_antenna.inputPar.Radiator.fr_al.push_back(stod(vs[i]));
+						}
+						if (vs.back() != "**")
+						{
+							_antenna.inputPar.Radiator.fr_al.push_back(stod(vs.back()));
+							break;
+						}
 					}
 				}
 				while (current_str.find("first order prefractal") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					size_t s_ = 0;
-					while (s_ < current_str.size())
-					{
-						if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
-						{
-							current_str.erase(current_str.begin() + s_);
-							continue;
-						}
-						++s_;
-					}
-					stringstream ss(current_str);
-					vs.clear();
-					while (ss >> word) vs.push_back(word);
 					_antenna.inputPar.Radiator.fr_pred1X.clear();
 					_antenna.inputPar.Radiator.fr_pred1Y.clear();
-					for (size_t i=1; i<vs.size(); ++i)
+					int c = 0;
+					while (true)
 					{
-						if (i%2 == 0)
+						getline(file, current_str);
+						size_t s_ = 0;
+						while (s_ < current_str.size())
 						{
-							_antenna.inputPar.Radiator.fr_pred1Y.push_back(stod(vs[i]));
+							if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
+							{
+								current_str.erase(current_str.begin() + s_);
+								continue;
+							}
+							++s_;
 						}
-						if (i%2 == 1)
+						stringstream ss(current_str);
+						vs.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i, ++c)
 						{
-							_antenna.inputPar.Radiator.fr_pred1X.push_back(stod(vs[i]));
+							if (c % 2 == 0)
+							{
+								_antenna.inputPar.Radiator.fr_pred1X.push_back(stod(vs[i]));
+							}
+							if (c % 2 == 1)
+							{
+								_antenna.inputPar.Radiator.fr_pred1Y.push_back(stod(vs[i]));
+							}
+						}
+						if (vs.back() != "**")
+						{
+							if (c % 2 == 0)
+							{
+								_antenna.inputPar.Radiator.fr_pred1X.push_back(stod(vs.back()));
+							}
+							if (c % 2 == 1)
+							{
+								_antenna.inputPar.Radiator.fr_pred1Y.push_back(stod(vs.back()));
+							}
+							break;
 						}
 					}
 				}
 
 				while (current_str.find("m-th order prefractal") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					size_t s_ = 0;
-					while (s_ < current_str.size())
-					{
-						if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',' || current_str[s_] == '*')
-						{
-							current_str.erase(current_str.begin() + s_);
-							continue;
-						}
-						++s_;
-					}
-					stringstream ss(current_str);
-					vs.clear();
-					while (ss >> word) vs.push_back(word);
 					_antenna.inputPar.Radiator.fr_predmX.clear();
 					_antenna.inputPar.Radiator.fr_predmY.clear();
-					for (size_t i=0; i<vs.size(); ++i)
+					int c = 0;
+					while (true)
 					{
-						if (i%2 == 0)
+						getline(file, current_str);
+						size_t s_ = 0;
+						while (s_ < current_str.size())
 						{
-							_antenna.inputPar.Radiator.fr_predmX.push_back(stod(vs[i]));
+							if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
+							{
+								current_str.erase(current_str.begin() + s_);
+								continue;
+							}
+							++s_;
 						}
-						if (i%2 == 1)
+						stringstream ss(current_str);
+						vs.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i = 1; i < vs.size() - 1; ++i, ++c)
 						{
-							_antenna.inputPar.Radiator.fr_predmY.push_back(stod(vs[i]));
+							if (c % 2 == 0)
+							{
+								_antenna.inputPar.Radiator.fr_predmX.push_back(stod(vs[i]));
+							}
+							if (c % 2 == 1)
+							{
+								_antenna.inputPar.Radiator.fr_predmY.push_back(stod(vs[i]));
+							}
+						}
+						if (vs.back() != "**")
+						{
+							if (c % 2 == 0)
+							{
+								_antenna.inputPar.Radiator.fr_predmX.push_back(stod(vs.back()));
+							}
+							if (c % 2 == 1)
+							{
+								_antenna.inputPar.Radiator.fr_predmY.push_back(stod(vs.back()));
+							}
+							break;
 						}
 					}
 				}
@@ -1567,31 +1671,47 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				while (current_str.find("GROUND") == string::npos) {getline(file, current_str);}
 				while (current_str.find("of ground:") == string::npos) {getline(file, current_str);}
 				{
-					getline(file, current_str);
-					size_t s_ = 0;
-					while (s_ < current_str.size())
-					{
-						if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
-						{
-							current_str.erase(current_str.begin() + s_);
-							continue;
-						}
-						++s_;
-					}
-					stringstream ss(current_str);
-					vs.clear();
-					while (ss >> word) vs.push_back(word);
 					_antenna.inputPar.Ground.coordX.clear();
 					_antenna.inputPar.Ground.coordY.clear();
-					for (size_t i=1; i<vs.size(); ++i)
+					int c = 0;
+					while (true)
 					{
-						if (i%2 == 0)
+						getline(file, current_str);
+						size_t s_ = 0;
+						while (s_ < current_str.size())
 						{
-							_antenna.inputPar.Ground.coordY.push_back(stod(vs[i]));
+							if (current_str[s_] == '(' || current_str[s_] == ')' || current_str[s_] == ',')
+							{
+								current_str.erase(current_str.begin() + s_);
+								continue;
+							}
+							++s_;
 						}
-						if (i%2 == 1)
+						stringstream ss(current_str);
+						vs.clear();
+						while (ss >> word) vs.push_back(word);
+						for (size_t i=1; i<vs.size()-1; ++i, ++c)
 						{
-							_antenna.inputPar.Ground.coordX.push_back(stod(vs[i]));
+							if (c % 2 == 0)
+							{
+								_antenna.inputPar.Ground.coordX.push_back(stod(vs[i]));
+							}
+							if (c % 2 == 1)
+							{
+								_antenna.inputPar.Ground.coordY.push_back(stod(vs[i]));
+							}
+						}
+						if (vs.back() != "**")
+						{
+							if (c % 2 == 0)
+							{
+								_antenna.inputPar.Ground.coordX.push_back(stod(vs.back()));
+							}
+							if (c % 2 == 1)
+							{
+								_antenna.inputPar.Ground.coordY.push_back(stod(vs.back()));
+							}
+							break;
 						}
 					}
 				}

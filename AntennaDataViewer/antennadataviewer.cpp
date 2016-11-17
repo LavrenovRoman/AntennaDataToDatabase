@@ -820,15 +820,6 @@ void AntennaDataViewer::CreateGraph()
 	}
 	if (selectedY != -1.0)
 	{
-		/*
-		QCPItemLine *line = new QCPItemLine(ui.PlotWidget);
-		ui.PlotWidget->addItem(line);
-		QPointF poss(0, selectedY);
-		line->start->setPixelPoint(poss);
-		QPointF posf(1000, selectedY);
-		line->end->setPixelPoint(posf);
-		*/
-
 		QVector<QPointF> linePixelData;
 		QVector<QCPData> scatterData;
 		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
