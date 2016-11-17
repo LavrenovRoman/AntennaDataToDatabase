@@ -1,6 +1,12 @@
 #include "antennadatatodatabase.h"
 #include <QFileDialog>
 
+#if _DEBUG
+#pragma comment(lib, "../lib/AntennaDataToDatabaseCore32d.lib")
+#else
+#pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
+#endif
+
 AntennaDataToDatabase::AntennaDataToDatabase(QWidget *parent)
 	: QMainWindow(parent)
 {

@@ -6,12 +6,6 @@
 
 #include "Core.h"
 
-#if _DEBUG
-#pragma comment(lib, "../lib/AntennaDataToDatabaseCore32d.lib")
-#else
-#pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
-#endif
-
 class AntennaDataToDatabase : public QMainWindow
 {
 	Q_OBJECT
