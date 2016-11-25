@@ -35,8 +35,8 @@ void ParseFekoFile::ParseFileComment(QString _file, Experiment& _experiment)
 		vs.clear();
 		while (ss >> word) vs.push_back(word);
 		_experiment.date.tm_year = stoi(vs[2]);
-		_experiment.date.tm_mon  = stoi(vs[0]);
-		_experiment.date.tm_mday = stoi(vs[1]);
+		_experiment.date.tm_mon  = stoi(vs[1]);
+		_experiment.date.tm_mday = stoi(vs[0]);
 
 		getline(file, current_str);
 		_experiment.comment = current_str;
@@ -1351,12 +1351,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("x[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_pX.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_pX.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1371,12 +1371,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("y[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_pY.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_pY.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1391,12 +1391,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("t[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_pT.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_pT.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1411,12 +1411,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("D11[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_D11.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_D11.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1431,12 +1431,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("D12[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_D12.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_D12.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1451,12 +1451,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("D21[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_D21.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_D21.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1471,12 +1471,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("D22[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_D22.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_D22.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1492,12 +1492,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 
 				while (current_str.find("lam[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_lam.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_lam.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i = 1; i < vs.size() - 1; ++i)
 						{
@@ -1512,12 +1512,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				}
 				while (current_str.find("al[]") == string::npos) {getline(file, current_str);}
 				{
+					_antenna.inputPar.Radiator.fr_al.clear();
 					while (true)
 					{
 						getline(file, current_str);
 						stringstream ss(current_str);
 						vs.clear();
-						_antenna.inputPar.Radiator.fr_al.clear();
 						while (ss >> word) vs.push_back(word);
 						for (size_t i=1; i<vs.size() - 1; ++i)
 						{
