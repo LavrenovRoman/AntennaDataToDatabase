@@ -836,7 +836,7 @@ void AntennaDataViewer::CreateGraph()
 			int c = 0;
 			while (c < linePixelData.size())
 			{
-				int p1, p2, p3, p4 = -1;
+				int p1=-1, p2=-1, p3=-1, p4 = -1;
 				for (int i = c; i < linePixelData.size(); ++i, ++c)
 				{
 					if (linePixelData[i].y() < selectedY) p1 = i;
@@ -856,10 +856,19 @@ void AntennaDataViewer::CreateGraph()
 						break;
 					}
 				}
-				if (p4 != -1 && p3 != -1 && p2 != -1 && p1 != -1)
+				if (p3 != -1 && p2 != -1 && p1 != -1)
 				{
-					double x1 = (linePixelData[p1].x()*linePixelData[p2].y() - linePixelData[p2].x()*linePixelData[p1].y() + selectedY*(linePixelData[p2].x() - linePixelData[p1].x())) / (linePixelData[p2].y() - linePixelData[p1].y());
-					double x2 = (linePixelData[p4].x()*linePixelData[p3].y() - linePixelData[p3].x()*linePixelData[p4].y() + selectedY*(linePixelData[p3].x() - linePixelData[p4].x())) / (linePixelData[p3].y() - linePixelData[p4].y());
+					double x1, x2;
+					x1 = (linePixelData[p1].x()*linePixelData[p2].y() - linePixelData[p2].x()*linePixelData[p1].y() + selectedY*(linePixelData[p2].x() - linePixelData[p1].x())) / (linePixelData[p2].y() - linePixelData[p1].y());
+					if (p4 != -1)
+					{
+						x2 = (linePixelData[p4].x()*linePixelData[p3].y() - linePixelData[p3].x()*linePixelData[p4].y() + selectedY*(linePixelData[p3].x() - linePixelData[p4].x())) / (linePixelData[p3].y() - linePixelData[p4].y());
+					}
+					else
+					{
+						x2 = ui.PlotWidget->size().width();
+					}
+
 					double U = (stdx[p2] - stdx[p1])*(x2 - x1) / (linePixelData[p2].x() - linePixelData[p1].x());
 
 					QPointF posF((x2+x1)/2, selectedY);
