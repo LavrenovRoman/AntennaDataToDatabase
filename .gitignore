@@ -1,12 +1,14 @@
+*.vcxproj.user
 /AntennaDataToDatabase.opensdf
 /AntennaDataToDatabase.sdf
 /AntennaDataToDatabase.v12.suo
 /AntennaDataToDatabase/Debug/
 /AntennaDataToDatabase/Release/
+/AntennaDataToDatabase/Win32/
 /AntennaDataToDatabase/GeneratedFiles/
 /AntennaDataToDatabase/Options.ini
+/AntennaDataToDatabase/AntennaDataToDatabase.vcxproj.user
 /AntennaDataToDatabase/Test*/
-/AntennaDataToDatabase/Win32/
 /AntennaDataToDatabaseCmd/Debug/
 /AntennaDataToDatabaseCmd/Options.ini
 /AntennaDataToDatabaseCmd/Release/
@@ -19,6 +21,7 @@
 /AntennaDataViewer/Options.ini
 /AntennaDataViewer/Release/
 /AntennaDataViewer/Win32/
+/AntennaDataViewer/AntennaDataViewer.vcxproj.user
 /CopyDB/Options.ini
 /CopyDB/Win32/
 /CopyDB/Debug/
