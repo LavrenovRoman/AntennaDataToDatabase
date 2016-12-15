@@ -58,6 +58,11 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 		{
 			ui.listDBSelect->insertItem(i, selectPars[i]);
 		}
+
+		pSelExs = new SelectExperiments(pSelAll, this);
+		connect(pSelEx, SIGNAL(ExperimentsOk()), this, SLOT(ExperimentsOk()));
+		connect(pSelEx, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
+		pSelExs->setVisible(true);
 		
 		pSelEx = new SelectExperiment(pSelAll, this);
 		connect(pSelEx, SIGNAL(ExperimentOk()), this, SLOT(ExperimentOk()));
@@ -497,6 +502,12 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	default:
 		break;
 	}
+}
+
+
+void AntennaDataViewer::ExperimentsOk()
+{
+
 }
 
 void AntennaDataViewer::ExperimentOk()

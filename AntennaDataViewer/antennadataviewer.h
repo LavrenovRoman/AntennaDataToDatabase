@@ -4,9 +4,10 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_antennadataviewer.h"
 #include <QStringList>
-#include "selectexperiment.h"
 #include "selectantenna.h"
 #include "selectedantennas.h"
+#include "selectexperiment.h"
+#include "selectexperiments.h"
 
 struct SelectedArea
 {
@@ -52,6 +53,7 @@ public:
 private:
 	Ui::AntennaDataViewerClass ui;
 	Core core;
+	SelectExperiments * pSelExs;
 	SelectExperiment * pSelEx;
 	SelectAntenna * pSelAnt;
 	SelectedAntennas * pSelExAnt;
@@ -76,6 +78,7 @@ private slots:
 	void CreateGraph();
 	void DBRowChanged(QListWidgetItem* pSelectRow);
 	void AntennaOk();
+	void ExperimentsOk();
 	void ExperimentOk();
 	void ExperimentCancel();
 	void SelectExpAntOk();

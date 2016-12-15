@@ -23,7 +23,7 @@ signals:
 
 private:
 	SelectAll * pkCoreData;
-	Ui::Dialog ui;
+	Ui::DialogExperiment ui;
 
 private slots:
 	void ExpChanged(int expChange);

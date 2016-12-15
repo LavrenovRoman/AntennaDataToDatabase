@@ -92,6 +92,15 @@
     <ClCompile Include="GeneratedFiles\Release\moc_selectedantennas.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="selectexperiments.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_selectexperiments.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_selectexperiments.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="antennadataviewer.h">
@@ -124,6 +133,12 @@
     <CustomBuild Include="selectedantennas.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="selectexperiments.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="selectexperiments.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_antennadataviewer.h">
@@ -142,6 +157,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_selectedantennas.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_selectexperiments.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
