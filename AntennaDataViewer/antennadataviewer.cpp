@@ -6,7 +6,6 @@
 #include "correlat.h"
 #include "Antenna.h"
 
-
 using namespace std;
 
 #if _DEBUG
@@ -94,6 +93,10 @@ void AntennaDataViewer::CreateLists()
 	{
 		inputPars << QString::fromLocal8Bit("Масштаб по Х");
 		inputPars << QString::fromLocal8Bit("Масштаб по Y");
+		inputPars << QString::fromLocal8Bit("Значение S11 первого минимума (dB)");
+		inputPars << QString::fromLocal8Bit("Частота первого минимума (МГц)");
+		inputPars << QString::fromLocal8Bit("Значение S11 глобального минимума (dB)");
+		inputPars << QString::fromLocal8Bit("Частота глобального минимума (МГц)");
 
 		outputPars << QString::fromLocal8Bit("Значение S11 первого минимума (dB)");
 		outputPars << QString::fromLocal8Bit("Частота первого минимума (МГц)");
@@ -187,6 +190,18 @@ void AntennaDataViewer::ClickedCalcCorr()
 					break;
 				case 1:
 					res[0].push_back(_ant.inputPar.Radiator.ScaleY);
+					break;
+				case 2:
+					res[0].push_back(_ant.outputPar.fst_s11);
+					break;
+				case 3:
+					res[0].push_back(_ant.outputPar.fst_w);
+					break;
+				case 4:
+					res[0].push_back(minS11);
+					break;
+				case 5:
+					res[0].push_back(minS11W);
 					break;
 				default:
 					break;
@@ -675,6 +690,23 @@ void AntennaDataViewer::CreateGraph()
 	y = QVector<double>::fromStdVector(res[1]);
 	if (!parInsideAntenna)
 	{
+		switch (currentInput)
+		{
+		case 2:
+			for (int k = 0; k < x.size(); k++)	{ x[k] = 10 * log10(x[k]); }
+			break;
+		case 3:
+			for (int k = 0; k < x.size(); k++)	{ x[k] /= 1000000; }
+			break;
+		case 4:
+			for (int k = 0; k < x.size(); k++)	{ x[k] = 10 * log10(x[k]); }
+			break;
+		case 5:
+			for (int k = 0; k < x.size(); k++)	{ x[k] /= 1000000; }
+			break;
+		default:
+			break;
+		}
 		switch (currentOutput)
 		{
 		case 0:
