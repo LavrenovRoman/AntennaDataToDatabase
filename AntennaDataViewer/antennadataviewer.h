@@ -61,8 +61,11 @@ private:
 	QStringList inputPars, outputPars, selectPars;
 	std::vector<std::vector<double>> res;
 	QString xGraphTitle, yGraphTitle; 
+
+	std::vector<int> IdsExperiment;
 	int IdExperiment;
 	int IdAntenna;
+	
 	bool parInsideAntenna;
 	std::vector<int> selectedPoints;
 	std::vector<ViewDataExp> viewDataExp;
