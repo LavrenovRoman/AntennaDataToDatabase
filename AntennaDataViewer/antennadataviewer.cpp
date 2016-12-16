@@ -433,6 +433,15 @@ void AntennaDataViewer::SortResult(int l, int r)
 		SortResult(l, j);
 }
 
+void AntennaDataViewer::ViewDBSelect(int par)
+{
+	ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
+	ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
+	ui.listDBSelect->item(Concrete_Ant)->setSelected(false);
+	ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
+	ui.listDBSelect->item(par)->setSelected(true);
+}
+
 void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 {
 	ui.listDBSelect->clearFocus();
@@ -450,11 +459,8 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	switch (selectRow)
 	{
 	case DB_SelectAll:
+		ViewDBSelect(DB_SelectAll);
 		currentMode = DB_SelectAll;
-		ui.listDBSelect->item(DB_SelectAll)->setSelected(true);
-		ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
-		ui.listDBSelect->item(Concrete_Ant)->setSelected(false);
-		ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
 		pSelEx->setVisible(false);
 		pSelAnt->setVisible(false);
 		pSelExAnt->setVisible(false);
@@ -466,20 +472,14 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 		CreateLists();
 		break;
 	case Concrete_Exp:
-		ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-		ui.listDBSelect->item(Concrete_Exp)->setSelected(true);
-		ui.listDBSelect->item(Concrete_Ant)->setSelected(false);
-		ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
+		ViewDBSelect(Concrete_Exp);
 		pSelEx->setVisible(true);
 		pSelAnt->setVisible(false);
 		pSelExAnt->setVisible(false);
 		//pSelExAnt->Clear();
 		break;
 	case Concrete_Ant:
-		ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-		ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
-		ui.listDBSelect->item(Concrete_Ant)->setSelected(true);
-		ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
+		ViewDBSelect(Concrete_Ant);
 		pSelEx->setVisible(false);
 		pSelAnt->setVisible(true);
 		pSelExAnt->setVisible(false);
@@ -493,10 +493,7 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 		}
 		if (pSelExAnt->GetDataSelectedExpAnt()->size() > 0)
 		{
-			ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-			ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
-			ui.listDBSelect->item(Concrete_Ant)->setSelected(false);
-			ui.listDBSelect->item(Analisys_Sel)->setSelected(true);
+			ViewDBSelect(Analisys_Sel);
 		}
 		break;
 	default:
@@ -513,10 +510,7 @@ void AntennaDataViewer::ExperimentsOk()
 void AntennaDataViewer::ExperimentOk()
 {
 	currentMode = Concrete_Exp;
-	ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-	ui.listDBSelect->item(Concrete_Exp)->setSelected(true);
-	ui.listDBSelect->item(Concrete_Ant)->setSelected(false);
-	ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
+	ViewDBSelect(Concrete_Exp);
 	parInsideAntenna = false;
 	IdExperiment = pSelEx->IdExperiment;
 	IdAntenna = -1;
@@ -526,10 +520,7 @@ void AntennaDataViewer::ExperimentOk()
 void AntennaDataViewer::AntennaOk()
 {
 	currentMode = Concrete_Ant;
-	ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-	ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
-	ui.listDBSelect->item(Concrete_Ant)->setSelected(true);
-	ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
+	ViewDBSelect(Concrete_Ant);
 	parInsideAntenna = true;
 	IdExperiment = pSelAnt->IdExperiment;
 	IdAntenna = pSelAnt->IdAntenna;
@@ -538,11 +529,7 @@ void AntennaDataViewer::AntennaOk()
 
 void AntennaDataViewer::ExperimentCancel()
 {
-	ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-	ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
-	ui.listDBSelect->item(Concrete_Ant)->setSelected(false);
-	ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
-	ui.listDBSelect->item(currentMode)->setSelected(true);
+	ViewDBSelect(currentMode);
 	pSelEx->setVisible(false);
 	pSelAnt->setVisible(false);
 	pSelExAnt->setVisible(false);
@@ -552,10 +539,7 @@ void AntennaDataViewer::SelectExpAntOk()
 {
 	if (pSelExAnt->GetDataSelectedExpAnt()->size() == 1)
 	{
-		ui.listDBSelect->item(DB_SelectAll)->setSelected(false);
-		ui.listDBSelect->item(Concrete_Exp)->setSelected(false);
-		ui.listDBSelect->item(Concrete_Ant)->setSelected(true);
-		ui.listDBSelect->item(Analisys_Sel)->setSelected(false);
+		ViewDBSelect(Concrete_Ant);
 		parInsideAntenna = true;
 		IdExperiment = pSelExAnt->GetDataSelectedExpAnt()->at(0).IdExperiment;
 		IdAntenna = pSelExAnt->GetDataSelectedExpAnt()->at(0).IdAntenna;

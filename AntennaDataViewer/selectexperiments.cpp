@@ -18,8 +18,9 @@ SelectExperiments::SelectExperiments(SelectAll* pCoreData, QWidget *parent)
 	connect(ui.listWidget, SIGNAL(currentRowChanged(int)), this, SLOT(ExpChanged(int)));
 	connect(ui.okButton, SIGNAL(clicked()), this, SIGNAL(ExperimentsOk()));
 	connect(ui.cancelButton, SIGNAL(clicked()), this, SIGNAL(Cancel()));
-	connect(ui.dateEditFrom, SIGNAL(dateChanged()), this, SIGNAL(Filter()));
-	connect(ui.dateEditBefore, SIGNAL(dateChanged(QDate)), this, SIGNAL(Filter()));
+	connect(ui.dateEditFrom, SIGNAL(dateChanged(QDate)), this, SLOT(Filter()));
+	connect(ui.dateEditBefore, SIGNAL(dateChanged(QDate)), this, SLOT(Filter()));
+	connect(ui.leCommFilter, SIGNAL(textEdited(QString)), this, SLOT(Filter()));
 	pkCoreData = pCoreData;
 	ui.okButton->setEnabled(true);
 	Reset();
@@ -43,7 +44,6 @@ void SelectExperiments::Reset()
 	ui.leCicles->clear();
 	ui.leComm->clear();
 	repaint();
-	Filter();
 }
 
 void SelectExperiments::Filter()
@@ -51,15 +51,24 @@ void SelectExperiments::Filter()
 	QDate dataBegin = ui.dateEditFrom->date();
 	QDate dataEnd = ui.dateEditBefore->date();
 	QString comm = ui.leCommFilter->text();
+	std::string s_comm = comm.toLocal8Bit().constData();
 
 	ui.listWidget->clear();
 	IdsExperiment.clear();
 
 	for (int i = 0; i<pkCoreData->GetExpsID()->size(); ++i)
 	{
+		std::string s_commEx = pkCoreData->GetExps()->at(i).comment.data();
+
+		size_t pos = std::string::npos;
+		if (!s_comm.empty())
+		{
+			pos = s_commEx.find(s_comm);
+		}
+		
 		QString date = QString::number(pkCoreData->GetExps()->at(i).date.tm_mday) + "." + QString::number(pkCoreData->GetExps()->at(i).date.tm_mon) + "." + QString::number(pkCoreData->GetExps()->at(i).date.tm_year);
 		QDate dataEx(pkCoreData->GetExps()->at(i).date.tm_year, pkCoreData->GetExps()->at(i).date.tm_mon, pkCoreData->GetExps()->at(i).date.tm_mday);
-		if (dataEx >= dataBegin && dataEx <= dataEnd)
+		if (dataEx >= dataBegin && dataEx <= dataEnd && (s_comm.empty() || pos != std::string::npos))
 		{
 			ui.listWidget->insertItem(i, QString::number(pkCoreData->GetExpsID()->at(i)));
 			IdsExperiment.push_back(pkCoreData->GetExpsID()->at(i));

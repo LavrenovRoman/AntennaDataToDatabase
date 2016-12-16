@@ -88,6 +88,7 @@ private slots:
 	void PlotMouseRelease(QMouseEvent *event);
 	void SortResult(int l, int r);
 	void SortResult();
+	void ViewDBSelect(int par);
 };
 
 #endif // ANTENNADATAVIEWER_H
