@@ -89,6 +89,7 @@ private slots:
 	void SortResult(int l, int r);
 	void SortResult();
 	void ViewDBSelect(int par);
+	void VisibleWidget(QDialog * widget = nullptr);
 };
 
 #endif // ANTENNADATAVIEWER_H

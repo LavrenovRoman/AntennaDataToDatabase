@@ -60,24 +60,22 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 		}
 
 		pSelExs = new SelectExperiments(pSelAll, this);
-		connect(pSelEx, SIGNAL(ExperimentsOk()), this, SLOT(ExperimentsOk()));
-		connect(pSelEx, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
-		pSelExs->setVisible(true);
+		connect(pSelExs, SIGNAL(ExperimentsOk()), this, SLOT(ExperimentsOk()));
+		connect(pSelExs, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
 		
 		pSelEx = new SelectExperiment(pSelAll, this);
 		connect(pSelEx, SIGNAL(ExperimentOk()), this, SLOT(ExperimentOk()));
 		connect(pSelEx, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
-		pSelEx->setVisible(false);
 
 		pSelAnt = new SelectAntenna(pSelAll, this);
 		connect(pSelAnt, SIGNAL(AntennaOk()), this, SLOT(AntennaOk()));
 		connect(pSelAnt, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
-		pSelAnt->setVisible(false);
 
 		pSelExAnt = new SelectedAntennas(pSelAll, this);
 		connect(pSelExAnt, SIGNAL(SelectExpAntOk()), this, SLOT(SelectExpAntOk()));
 		//connect(pSelAnt, SIGNAL(Cancel()), this, SLOT(SelectExpAntCancel()));
-		pSelExAnt->setVisible(false);
+		
+		VisibleWidget(pSelExs);
 
 		currentInput  = -1;
 		currentOutput = -1;
@@ -141,6 +139,7 @@ AntennaDataViewer::~AntennaDataViewer()
 {
 	if (pSelAll   != nullptr) delete pSelAll;
 	if (pSelEx    != nullptr) delete pSelEx;
+	if (pSelExs   != nullptr) delete pSelExs;
 	if (pSelAnt   != nullptr) delete pSelAnt;
 	if (pSelExAnt != nullptr) delete pSelExAnt;
 }
@@ -442,6 +441,18 @@ void AntennaDataViewer::ViewDBSelect(int par)
 	ui.listDBSelect->item(par)->setSelected(true);
 }
 
+void AntennaDataViewer::VisibleWidget(QDialog * widget)
+{
+	pSelEx->setVisible(false);
+	pSelExs->setVisible(false);
+	pSelAnt->setVisible(false);
+	pSelExAnt->setVisible(false);
+	if (widget != nullptr)
+	{
+		widget->setVisible(true);
+	}
+}
+
 void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 {
 	ui.listDBSelect->clearFocus();
@@ -461,9 +472,7 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	case DB_SelectAll:
 		ViewDBSelect(DB_SelectAll);
 		currentMode = DB_SelectAll;
-		pSelEx->setVisible(false);
-		pSelAnt->setVisible(false);
-		pSelExAnt->setVisible(false);
+		VisibleWidget();
 		pSelExAnt->Clear();
 		pSelEx->Reset();
 		parInsideAntenna = false;
@@ -473,16 +482,12 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 		break;
 	case Concrete_Exp:
 		ViewDBSelect(Concrete_Exp);
-		pSelEx->setVisible(true);
-		pSelAnt->setVisible(false);
-		pSelExAnt->setVisible(false);
+		VisibleWidget(pSelEx);
 		//pSelExAnt->Clear();
 		break;
 	case Concrete_Ant:
 		ViewDBSelect(Concrete_Ant);
-		pSelEx->setVisible(false);
-		pSelAnt->setVisible(true);
-		pSelExAnt->setVisible(false);
+		VisibleWidget(pSelAnt);
 		//pSelExAnt->Clear();
 		break;
 	case Analisys_Sel:
@@ -530,9 +535,7 @@ void AntennaDataViewer::AntennaOk()
 void AntennaDataViewer::ExperimentCancel()
 {
 	ViewDBSelect(currentMode);
-	pSelEx->setVisible(false);
-	pSelAnt->setVisible(false);
-	pSelExAnt->setVisible(false);
+	VisibleWidget();
 }
 
 void AntennaDataViewer::SelectExpAntOk()
@@ -603,7 +606,7 @@ void AntennaDataViewer::PlotMouseRelease(QMouseEvent *event)
 					}
 				}
 				pSelExAnt->Reset(selectedDataExpAnt);
-				pSelExAnt->setVisible(true);
+				VisibleWidget(pSelExAnt);
 				selectedPoints.clear();
 			}
 			selectedArea.Reset();
