@@ -30,6 +30,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 
 	pSelAll = nullptr;
 	pSelEx = nullptr;
+	pSelExs = nullptr;
 	pSelAnt = nullptr;
 	pSelExAnt = nullptr;
 

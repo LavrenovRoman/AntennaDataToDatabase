@@ -66,7 +66,6 @@ void SelectExperiments::Filter()
 			pos = s_commEx.find(s_comm);
 		}
 		
-		QString date = QString::number(pkCoreData->GetExps()->at(i).date.tm_mday) + "." + QString::number(pkCoreData->GetExps()->at(i).date.tm_mon) + "." + QString::number(pkCoreData->GetExps()->at(i).date.tm_year);
 		QDate dataEx(pkCoreData->GetExps()->at(i).date.tm_year, pkCoreData->GetExps()->at(i).date.tm_mon, pkCoreData->GetExps()->at(i).date.tm_mday);
 		if (dataEx >= dataBegin && dataEx <= dataEnd && (s_comm.empty() || pos != std::string::npos))
 		{
@@ -82,7 +81,6 @@ void SelectExperiments::Filter()
 
 void SelectExperiments::ExpChanged(int expChange)
 {
-	//ui.okButton->setEnabled(false);
 	if (expChange >= 0)
 	{
 		QString date = QString::number(pkCoreData->GetExps()->at(expChange).date.tm_mday) + "." + QString::number(pkCoreData->GetExps()->at(expChange).date.tm_mon) + "." + QString::number(pkCoreData->GetExps()->at(expChange).date.tm_year);
@@ -97,8 +95,5 @@ void SelectExperiments::ExpChanged(int expChange)
 		ui.leCicles->setText(cicles);
 
 		ui.leComm->setText(QString::fromLocal8Bit(pkCoreData->GetExps()->at(expChange).comment.data()));
-
-		//IdExperiment = pkCoreData->GetExpsID()->at(expChange);
-		//ui.okButton->setEnabled(true);
 	}
 }
