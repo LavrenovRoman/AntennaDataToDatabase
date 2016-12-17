@@ -13,7 +13,7 @@ FrbrdDatabase::FrbrdDatabase()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 FrbrdDatabase::~FrbrdDatabase()
 {
-	if ((*dataBase_) != nullptr && (*dataBase_)->Connected())
+	if (dataBase_ != nullptr && (*dataBase_)->Connected())
 	{
 		(*dataBase_)->Disconnect();
 	}
@@ -996,7 +996,7 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 /// @details Запись эксперимента в базу данных
 int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 {
-	int idExperiment;
+	int idExperiment = -1;
 	if ((*dataBase_)->Connected())
 	{
 		{
@@ -1021,6 +1021,7 @@ int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 		}
 
 		{
+			if (idExperiment > 0)
 			for (size_t i=0; i<pExperiment->cycles.size(); ++i)
 			{
 				IBPP::Transaction trExperimentP = IBPP::TransactionFactory(*dataBase_);
@@ -1051,7 +1052,10 @@ int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 /// @details Запись антенны в базу данных
 int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 {
-	int idAntenna, idOutputPar, idInputPar, idOutputParOneFreq;
+	int idAntenna          = -1;
+	int idOutputPar        = -1; 
+	int idInputPar         = -1;
+	int idOutputParOneFreq = -1;
 	if ((*dataBase_)->Connected())
 	{
 		{
@@ -1072,6 +1076,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 			catch (...)
 			{
 				trAntenna->Rollback();
+				return -1;
 			}
 		}
 
@@ -1095,6 +1100,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 			catch (...)
 			{
 				trInput->Rollback();
+				return -1;
 			}
 		}
 
@@ -1211,6 +1217,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 				st->Execute();
 				st->Get(1, idOutputPar);
 				trOutput->Commit();
+				return -1;
 			}
 			catch (...)
 			{
@@ -1280,6 +1287,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 					st->Execute();
 					st->Get(1, idOutputParOneFreq);
 					trOutput->Commit();
+					return -1;
 				}
 				catch (...)
 				{
@@ -1479,7 +1487,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 						tr->Rollback();
 					}
 				}
-				if (_antenna.type == WIRE || _antenna.type == PLANE)
+				if (_antenna.type == STRIPE || _antenna.type == PLANE)
 				{
 					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
 					tr->Start();

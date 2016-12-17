@@ -146,7 +146,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 					}
 				}
 
-				if (_antenna.type == WIRE)
+				if (_antenna.type == STRIPE || _antenna.type == WIRE)
 				{
 					words = "Length of the segments in m:";
 					while (current_str.find(words) == string::npos) {getline(file, current_str);}
@@ -500,7 +500,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 						valueDouble = stod(token);
 						NEW_EXCITATION_BY_VOLTAGE_SOURCE.Phase = valueDouble;
 					}
-					if (_antenna.type == STRIPE || _antenna.type == PLANE)
+					if (_antenna.type == PLANE)
 					{
 						words = "Electrical edge length in m:";
 						while (current_str.find(words) == string::npos) {getline(file, current_str);}
@@ -512,7 +512,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 							NEW_EXCITATION_BY_VOLTAGE_SOURCE.ElectricalEdgeLength = valueDouble;
 						}
 					}
-					if (_antenna.type == WIRE)
+					if (_antenna.type == STRIPE || _antenna.type == WIRE)
 					{
 						words = "ULA";
 						while (current_str.find(words) == string::npos) {getline(file, current_str);}
@@ -1073,7 +1073,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss = valueDouble;
 				}
 
-				if (_antenna.type == STRIPE)
+				if (_antenna.type == WIRE)
 				{
 					words = "grid DTHETA";
 					while (current_str.find(words) == string::npos) {getline(file, current_str);}
@@ -1279,17 +1279,12 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 	int nomer = 0;
 	std::string current_str, word, token;
 
-	bool findRADIATOR		= false;
-	bool findFEED			= false;
-	bool findSUBSTRATE		= false;
-	bool findGROUND			= false;
-
 	bool findFinish = false;
 	ifstream fileFinishEnd(_file.toLocal8Bit().constData());
 	_antenna.pathPre = _file.toLocal8Bit().constData();
 	while(!(fileFinishEnd.eof()))
 	{
-		if (current_str.find("Define constants") == string::npos)
+		if (current_str.find("END PHYSICAL ANTENNA PARAMS") == string::npos)
 		{
 			if (current_str.find("RADIATOR") != string::npos)  {_antenna.inputPar.findRADIATOR  = true;}
 			if (current_str.find("FEED") != string::npos)      {_antenna.inputPar.findFEED      = true;}
@@ -1322,9 +1317,9 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 				stringstream ss(current_str);
 				vs.clear();
 				while (ss >> word) vs.push_back(word);
-				if (vs[1] == "wire") _antenna.type = WIRE;
-				if (vs[1] == "stripe") _antenna.type = STRIPE;
-				if (vs[1] == "plane") _antenna.type = PLANE;
+				if (vs[1] == "wire")	   _antenna.type = WIRE;
+				if (vs[1] == "microstrip") _antenna.type = STRIPE;
+				if (vs[1] == "plane")      _antenna.type = PLANE;
 			}
 
 			if (_antenna.inputPar.findRADIATOR)

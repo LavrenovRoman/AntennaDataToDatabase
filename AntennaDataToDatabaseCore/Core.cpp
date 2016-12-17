@@ -230,7 +230,16 @@ int Core::WriteData()
 {
 	if (antennas.size() > 0)
 	{
-		int resId = pFBDataBase->WriteExperiment(pExperiment.get());
+
+		int resId = -1;
+		for (size_t i = 0; i < antennas.size(); ++i)
+		{
+			if (!antennas[i].aborted)
+			{
+				resId = pFBDataBase->WriteExperiment(pExperiment.get());
+				break;
+			}
+		}
 
 		for (size_t i=0; i<antennas.size(); ++i)
 		{
