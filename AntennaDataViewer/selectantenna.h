@@ -24,7 +24,7 @@ signals:
 	void Cancel();
 
 private:
-	SelectAll * pkCoreData;
+	SelectAll * pkCoreData = nullptr;
 	Ui::DialogAntenna ui;
 
 	private slots:

@@ -22,7 +22,7 @@ signals:
   void Cancel();
 
 private:
-	SelectAll * pkCoreData;
+	SelectAll * pkCoreData = nullptr;
 	Ui::DialogExperiments ui;
 
 private slots:

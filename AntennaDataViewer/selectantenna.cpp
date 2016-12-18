@@ -36,6 +36,7 @@ void SelectAntenna::Reset()
 	{
 		ui.listWidget->insertItem(i, QString::number(pkCoreData->GetExpsID()->at(i)));
 	}
+	ui.listWidget_2->clear();
 	ui.leDate->clear();
 	ui.leCicles->clear();
 	ui.leComm->clear();

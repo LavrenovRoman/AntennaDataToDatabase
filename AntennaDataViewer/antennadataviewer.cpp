@@ -46,6 +46,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	connect(ui.PlotWidget, SIGNAL(mouseMove(QMouseEvent *)), this, SLOT(PlotMouseMove(QMouseEvent *)));
 	connect(ui.PlotWidget, SIGNAL(mousePress(QMouseEvent *)), this, SLOT(PlotMousePress(QMouseEvent *)));
 	connect(ui.PlotWidget, SIGNAL(mouseRelease(QMouseEvent *)), this, SLOT(PlotMouseRelease(QMouseEvent *))); 
+	connect(ui.actChangeDB, SIGNAL(triggered()), this, SLOT(ChangeDB()));
 
 	selectPars << QString::fromLocal8Bit("Поиск по всей базе данных");
 	selectPars << QString::fromLocal8Bit("Выбрать некоторые эксперименты");
@@ -55,12 +56,12 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	
 	if (core.ConnectDatabase()==0) 
 	{
-		pSelAll = new SelectAll(&core);
-
 		for (int i=0; i<selectPars.size(); ++i)
 		{
 			ui.listDBSelect->insertItem(i, selectPars[i]);
 		}
+
+		pSelAll = new SelectAll(&core);
 
 		pSelExs = new SelectExperiments(pSelAll, this);
 		connect(pSelExs, SIGNAL(ExperimentsOk()), this, SLOT(ExperimentsOk()));
@@ -96,6 +97,32 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	IdAntenna = -1;
 	selectedPoints.clear();
 	selectedY = -1.0;
+
+	dirDB = core.GetCurrentDir();
+}
+
+void AntennaDataViewer::ChangeDB()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, QString::fromLocal8Bit("Выберите новую базу данных"), QString::fromLocal8Bit(dirDB.c_str()), tr("Database Files (*.fdb)"));
+	QFileInfo fi(fileName);
+	QDir tmp_dir(fi.dir());
+	dirDB = tmp_dir.absolutePath().toStdString();
+	if (core.ConnectDatabase(fileName.toStdString().c_str()) != 0)
+	{
+		QMessageBox::information(NULL, QString::fromLocal8Bit("Ошибка"), QString::fromLocal8Bit("Не могу подключится к БД, выберите другую базу данных"));
+		if (core.ConnectDatabase() != 0)
+		{
+			QMessageBox::information(NULL, QString::fromLocal8Bit("Ошибка"), QString::fromLocal8Bit("Не могу подключится к БД, проверьте файл Options.ini"));
+		}
+	}
+	else
+	{
+		pSelAll->ResetSelectAll();
+		pSelExs->Reset();
+		pSelEx->Reset();
+		pSelAnt->Reset();
+		pSelExAnt->Clear();
+	}
 }
 
 void AntennaDataViewer::CreateLists()

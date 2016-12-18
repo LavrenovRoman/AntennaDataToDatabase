@@ -21,7 +21,7 @@ public:
 	~Core();
 
 	int SetDonorDB();
-	int ConnectDatabase();
+	int ConnectDatabase(const char* pathDB = nullptr);
 	int OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles);
 	int ReadFiles();
 	int WriteData();
@@ -30,6 +30,7 @@ public:
 	int GetExperiments(std::vector<int>& ids, std::vector<Experiment>& exps, bool fullComment = false);
 	int GetAntennasByExperiment(std::vector<Antenna>& antennas, std::vector<int>& antennasID, int idExperiment);
 	int SetData(Experiment &exp, std::vector<Antenna>& _antennas);
+	std::string GetCurrentDir();
 
 private:
 

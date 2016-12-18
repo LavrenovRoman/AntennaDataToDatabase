@@ -494,6 +494,15 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>База Данных</string>
+    </property>
+    <addaction name="actChangeDB"/>
+    <addaction name="actCopyDB"/>
+    <addaction name="actDelDataDB"/>
+   </widget>
+   <addaction name="menu"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -504,6 +513,21 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="actChangeDB">
+   <property name="text">
+    <string>Сменить БД</string>
+   </property>
+  </action>
+  <action name="actCopyDB">
+   <property name="text">
+    <string>Копировать БД</string>
+   </property>
+  </action>
+  <action name="actDelDataDB">
+   <property name="text">
+    <string>Удалить данные из БД</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>

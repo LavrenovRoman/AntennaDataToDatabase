@@ -13,7 +13,7 @@ FrbrdDatabase::FrbrdDatabase()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 FrbrdDatabase::~FrbrdDatabase()
 {
-	if (dataBase_ != nullptr && (*dataBase_)->Connected())
+	if ((*dataBase_) != nullptr && (*dataBase_)->Connected())
 	{
 		(*dataBase_)->Disconnect();
 	}
@@ -1217,11 +1217,11 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 				st->Execute();
 				st->Get(1, idOutputPar);
 				trOutput->Commit();
-				return -1;
 			}
 			catch (...)
 			{
 				trOutput->Rollback();
+				return -1;
 			}
 		}
 
@@ -1287,11 +1287,11 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 					st->Execute();
 					st->Get(1, idOutputParOneFreq);
 					trOutput->Commit();
-					return -1;
 				}
 				catch (...)
 				{
 					trOutput->Rollback();
+					return -1;
 				}
 			}
 
@@ -1417,7 +1417,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 						}
 					}
 				}
-				if (_antenna.type == WIRE)
+				if (_antenna.type == STRIPE)
 				{
 					for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.size(); ++j)
 					{
@@ -1454,7 +1454,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 
 			if (_antenna.outputPar.findDIRECTIVITY_PATTERN_PARAMS)
 			{
-				if (_antenna.type == STRIPE)
+				if (_antenna.type == WIRE)
 				{
 					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
 					tr->Start();

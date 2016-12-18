@@ -3,6 +3,8 @@
 
 #include "Core.h"
 #include <QStringList>
+#include "wait_download.h"
+#include "atomic"
 
 class Antenna;
 class Experiment;
@@ -23,7 +25,9 @@ class SelectAll
 
 public:
 	SelectAll(Core* pCore);
+	~SelectAll();
 	void ResetSelectAll();
+	void ViewProgress();
 
 	std::vector<int> * GetExpsID();
 	std::vector<std::vector<int>> * GetAntsID();
@@ -37,7 +41,9 @@ protected:
 	std::vector<std::vector<Antenna>> ants;
 
 private:
-	Core * pkCore;
+	Core * pkCore = nullptr;
+	Wait_Download * pWD = nullptr;
+	std::atomic<int> progress;
 };
 
 #endif // SELECTALL_H

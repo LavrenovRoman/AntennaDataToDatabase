@@ -53,11 +53,11 @@ public:
 private:
 	Ui::AntennaDataViewerClass ui;
 	Core core;
-	SelectExperiments * pSelExs;
-	SelectExperiment * pSelEx;
-	SelectAntenna * pSelAnt;
-	SelectedAntennas * pSelExAnt;
-	SelectAll *pSelAll;
+	SelectExperiments * pSelExs = nullptr;
+	SelectExperiment * pSelEx = nullptr;
+	SelectAntenna * pSelAnt = nullptr;
+	SelectedAntennas * pSelExAnt = nullptr;
+	SelectAll *pSelAll = nullptr;
 	QStringList inputPars, outputPars, selectPars;
 	std::vector<std::vector<double>> res;
 	QString xGraphTitle, yGraphTitle; 
@@ -76,6 +76,8 @@ private:
 	int currentInput;
 	int currentOutput;
 
+	std::string dirDB;
+
 private slots:
 	void ClickedCalcCorr();
 	void CreateGraph();
@@ -93,6 +95,7 @@ private slots:
 	void SortResult();
 	void ViewDBSelect(int par);
 	void VisibleWidget(QDialog * widget = nullptr);
+	void ChangeDB();
 };
 
 #endif // ANTENNADATAVIEWER_H

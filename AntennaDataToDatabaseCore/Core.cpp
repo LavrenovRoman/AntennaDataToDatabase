@@ -40,14 +40,14 @@ int Core::SetDonorDB()
 	return 0;
 }
 
-int Core::ConnectDatabase()
+std::string Core::GetCurrentDir()
 {
 	char pth[FILENAME_MAX] = { 0 };
 	GetModuleFileName(NULL, pth, FILENAME_MAX);
 	char* p = strrchr(pth, '\\');
 	if (p) *(p + 1) = 0;
 	else pth[0] = 0;
-	
+
 	char current_work_dir_[FILENAME_MAX];
 	int j = 0;
 	for (int i = 0; i < sizeof(pth); ++i)
@@ -61,44 +61,57 @@ int Core::ConnectDatabase()
 		current_work_dir_[j] = pth[i];
 		j++;
 	}
-	std::string path_(current_work_dir_);
-	std::string path__("Options.ini");
-	//path_ = path_ + "/" + path__;
-	path_ = path_ + path__;
+	std::string path(current_work_dir_);
+	return path;
+}
 
+int Core::ConnectDatabase(const char* pathDB)
+{
 	cout << "Try to connect database...  " << endl;
-	cout << "Settings from file - " << path_ << endl;
-	QString qpath = QString::fromStdString(path_);
-	QSettings sett(qpath, QSettings::IniFormat);
-	string server  = sett.value("Server").toString().toStdString();
-	string path;
-	if (!donorDB)
+	string server, path, login, password;
+	login = "SYSDBA";//sett.value("Login").toString().toStdString();
+	password = "masterkey";//sett.value("Password").toString().toStdString();
+	if (pathDB == nullptr)
 	{
-		QString v = QString::fromLocal8Bit("Path");
-		path = sett.value(v).toString().toStdString();
-	}
-	else
-	{
-		QString v = QString::fromLocal8Bit("PathDonorDB");
-		path = sett.value(v).toString().toStdString();
-	}
-	string login = "SYSDBA";//sett.value("Login").toString().toStdString();
-	string password = "masterkey";//sett.value("Password").toString().toStdString();
-	if (path == "")
-	{
-		cout << "Error! Can not find file Options.ini" << endl;
-		return -1;
-	}
-	else
-	{
-		if (pFBDataBase->Initialization(server, path, login, password) != 0)
+		std::string full_path = GetCurrentDir();
+		std::string fOptions("Options.ini");
+		//path_ = path_ + "/" + path__;
+		full_path = full_path + fOptions;
+		
+		cout << "Settings from file - " << full_path << endl;
+		QString qpath = QString::fromStdString(full_path);
+		QSettings sett(qpath, QSettings::IniFormat);
+		server = sett.value("Server").toString().toStdString();
+		if (!donorDB)
 		{
-			cout << "Error! Can not connect to database. Check parameters" << endl;
-			cout << "Server = " << server << endl;
-			cout << "Path = " << path << endl;
-			return -2;
+			QString v = QString::fromLocal8Bit("Path");
+			path = sett.value(v).toString().toStdString();
+		}
+		else
+		{
+			QString v = QString::fromLocal8Bit("PathDonorDB");
+			path = sett.value(v).toString().toStdString();
+		}
+		if (path == "")
+		{
+			cout << "Error! Can not find file Options.ini" << endl;
+			return -1;
 		}
 	}
+	else
+	{
+		server = "127.0.0.1";
+		path = pathDB;
+	}
+	
+	if (pFBDataBase->Initialization(server, path, login, password) != 0)
+	{
+		cout << "Error! Can not connect to database. Check parameters" << endl;
+		cout << "Server = " << server << endl;
+		cout << "Path = " << path << endl;
+		return -2;
+	}
+	
 	cout << "Database connected!" << endl;
 	return 0;
 }

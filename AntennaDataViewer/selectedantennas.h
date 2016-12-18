@@ -24,7 +24,7 @@ signals:
 	void SelectExpAntOk();
 
 private:
-	SelectAll * pkCoreData;
+	SelectAll * pkCoreData = nullptr;
 	Ui::DialogSelAntennas ui;
 	std::vector<ViewDataExp> selectedDataExpAnt;
 	std::vector<int> selectedExpId, selectedAntId;
