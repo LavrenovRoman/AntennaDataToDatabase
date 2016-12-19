@@ -146,7 +146,14 @@ void AntennaDataViewer::ChangeDB()
 
 void AntennaDataViewer::CopyDB()
 {
-
+	if (pCopyDB != nullptr)
+	{
+		delete pCopyDB;
+		pCopyDB = nullptr;
+	}
+	pCopyDB = new WidgetCopyDB(pSelAll, &core, this);
+	pCopyDB->setVisible(true);
+	connect(pCopyDB, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
 }
 
 void AntennaDataViewer::DelFromDB()

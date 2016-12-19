@@ -65,6 +65,30 @@ std::string Core::GetCurrentDir()
 	return path;
 }
 
+void Core::SetPaths(QString qpath)
+{
+	QSettings sett(qpath, QSettings::IniFormat);
+	QString v1 = QString::fromLocal8Bit("Path");
+	pathRecipient = sett.value(v1).toString().toStdString();
+	QString v2 = QString::fromLocal8Bit("PathDonorDB");
+	pathDonor = sett.value(v2).toString().toStdString();
+}
+
+std::string Core::GetPathRecipient()
+{
+	return pathRecipient;
+}
+
+std::string Core::GetPathDonor()
+{
+	return pathDonor;
+}
+
+std::string Core::GetPathCurrentDB()
+{
+	return pathCurrentDB;
+}
+
 int Core::ConnectDatabase(const char* pathDB)
 {
 	cout << "Try to connect database...  " << endl;
@@ -82,15 +106,14 @@ int Core::ConnectDatabase(const char* pathDB)
 		QString qpath = QString::fromStdString(full_path);
 		QSettings sett(qpath, QSettings::IniFormat);
 		server = sett.value("Server").toString().toStdString();
+		SetPaths(qpath);
 		if (!donorDB)
 		{
-			QString v = QString::fromLocal8Bit("Path");
-			path = sett.value(v).toString().toStdString();
+			path = pathRecipient;
 		}
 		else
 		{
-			QString v = QString::fromLocal8Bit("PathDonorDB");
-			path = sett.value(v).toString().toStdString();
+			path = pathDonor;
 		}
 		if (path == "")
 		{
@@ -113,6 +136,7 @@ int Core::ConnectDatabase(const char* pathDB)
 	}
 	
 	cout << "Database connected!" << endl;
+	pathCurrentDB = path;
 	return 0;
 }
 

@@ -20,9 +20,6 @@ using namespace std;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int cntOutFiles = 0;
-	int cntPreFiles = 0;
-
 	QString strdir = QString::fromWCharArray(argv[1]);
 
 	Core coreRecepient;

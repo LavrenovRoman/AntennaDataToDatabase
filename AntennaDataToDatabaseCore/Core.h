@@ -32,6 +32,9 @@ public:
 	int GetAntennasByExperiment(std::vector<Antenna>& antennas, std::vector<int>& antennasID, int idExperiment);
 	int SetData(Experiment &exp, std::vector<Antenna>& _antennas);
 	std::string GetCurrentDir();
+	std::string GetPathRecipient();
+	std::string GetPathDonor();
+	std::string GetPathCurrentDB();
 
 private:
 
@@ -41,6 +44,9 @@ private:
 	std::vector<Antenna> antennas;
 	std::shared_ptr<Experiment> pExperiment;
 	bool donorDB;
+	std::string pathDonor, pathRecipient, pathCurrentDB;
+
+	void SetPaths(QString qpath);
 };
 
 #endif // CORE_H

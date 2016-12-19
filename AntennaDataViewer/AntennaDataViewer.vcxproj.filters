@@ -110,6 +110,15 @@
     <ClCompile Include="GeneratedFiles\Release\moc_deleteexperiment.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="widgetcopydb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_widgetcopydb.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_widgetcopydb.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="antennadataviewer.h">
@@ -157,6 +166,12 @@
     <CustomBuild Include="deleteexperiment.ui">
       <Filter>Form Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="widgetcopydb.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="widgetcopydb.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_antennadataviewer.h">
@@ -178,6 +193,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_deleteexperiment.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_widgetcopydb.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

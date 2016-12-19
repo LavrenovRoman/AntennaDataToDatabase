@@ -4,6 +4,7 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_antennadataviewer.h"
 #include <QStringList>
+#include "widgetcopydb.h"
 #include "selectantenna.h"
 #include "selectedantennas.h"
 #include "selectexperiment.h"
@@ -54,7 +55,10 @@ public:
 private:
 	Ui::AntennaDataViewerClass ui;
 	Core core;
+	
 	DeleteExperiment * pDelEx = nullptr;
+	WidgetCopyDB * pCopyDB = nullptr;
+
 	SelectExperiments * pSelExs = nullptr;
 	SelectExperiment * pSelEx = nullptr;
 	SelectAntenna * pSelAnt = nullptr;
