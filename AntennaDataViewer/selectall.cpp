@@ -16,7 +16,7 @@ SelectAll::SelectAll(Core* pCore, QWidget *parent) : QObject(parent)
 	pkCore = pCore;
 
 	progress = 0;
-	pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, parent);
+	pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, parent, Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 	pprd->setWindowTitle(QString::fromLocal8Bit("Подождите"));
 	pprd->setWindowModality(Qt::WindowModal);
 	pprd->setModal(true);
