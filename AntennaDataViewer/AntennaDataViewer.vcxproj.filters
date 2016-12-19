@@ -101,13 +101,10 @@
     <ClCompile Include="GeneratedFiles\Release\moc_selectexperiments.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="wait_download.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug\moc_wait_download.cpp">
+    <ClCompile Include="GeneratedFiles\Debug\moc_selectall.cpp">
       <Filter>Generated Files\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release\moc_wait_download.cpp">
+    <ClCompile Include="GeneratedFiles\Release\moc_selectall.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
   </ItemGroup>
@@ -148,10 +145,7 @@
     <CustomBuild Include="selectexperiments.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="wait_download.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="wait_download.h">
+    <CustomBuild Include="selectall.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -168,16 +162,10 @@
     <ClInclude Include="GeneratedFiles\ui_selectantenna.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="selectall.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_selectedantennas.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_selectexperiments.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_wait_download.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

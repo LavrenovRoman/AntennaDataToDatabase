@@ -2,9 +2,10 @@
 #define SELECTALL_H
 
 #include "Core.h"
+#include <QProgressDialog>
 #include <QStringList>
-#include "wait_download.h"
-#include "atomic"
+#include <QObject>
+#include <atomic>
 
 class Antenna;
 class Experiment;
@@ -20,14 +21,14 @@ struct ViewDataExp
 	int IdAntenna;
 };
 
-class SelectAll
+class SelectAll : public QObject
 {
+	Q_OBJECT
 
 public:
-	SelectAll(Core* pCore);
+	SelectAll(Core* pCore, QWidget *parent = 0);
 	~SelectAll();
 	void ResetSelectAll();
-	void ViewProgress();
 
 	std::vector<int> * GetExpsID();
 	std::vector<std::vector<int>> * GetAntsID();
@@ -42,8 +43,9 @@ protected:
 
 private:
 	Core * pkCore = nullptr;
-	Wait_Download * pWD = nullptr;
+	QProgressDialog* pprd = nullptr;
 	std::atomic<int> progress;
+	void Cancel();
 };
 
 #endif // SELECTALL_H

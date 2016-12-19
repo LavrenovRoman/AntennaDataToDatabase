@@ -1,6 +1,7 @@
 #include "selectall.h"
 #include "Antenna.h"
 #include "thread"
+#include <QApplication>
 
 using namespace std;
 
@@ -10,50 +11,58 @@ using namespace std;
 #pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
 #endif
 
-SelectAll::SelectAll(Core* pCore)
+SelectAll::SelectAll(Core* pCore, QWidget *parent) : QObject(parent)
 {
 	pkCore = pCore;
-	//pWD = new Wait_Download();
-	//pWD->moveToThread(QApplication::instance()->thread());
-	//pWD->show();
-	//pWD->setVisible(true);
-	//pWD->update();
-	//pWD->repaint();
+
 	progress = 0;
+	pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, parent);
+	pprd->setWindowTitle(QString::fromLocal8Bit("Подождите"));
+	pprd->setWindowModality(Qt::WindowModal);
+	pprd->setModal(true);
+	pprd->setMinimumDuration(1);
+	pprd->setValue(progress.load());
+	QApplication::processEvents(QEventLoop::AllEvents);
+	QObject::connect(pprd, SIGNAL(canceled()), this, SLOT(Cancel()));
+	pprd->show();
+
 	std::thread reset_func(&SelectAll::ResetSelectAll, this);
+
+	while (progress.load() < 100)
+	{
+		if (pprd->wasCanceled())
+		{
+			Cancel();
+		}
+		QApplication::processEvents(QEventLoop::AllEvents);
+		if (pprd->value() == progress.load())
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			continue;
+		}
+		//qDebug() << progress.load();
+		pprd->setValue(progress.load());
+		pprd->update();
+	}
+	pprd->setValue(progress.load());
 	reset_func.join();
 
-	//QtConcurrent::run(&text1, &TestClass::run);
-	//std::thread view_func(&SelectAll::ViewProgress, this);
-	//view_func.detach();
-
-	//while (progress!=100)
-	//{
-	//	pWD->setVisible(true);
-	//	pWD->WaitChanged(progress);
-	//	pWD->update();
-	//	pWD->repaint();
-	//}
+	delete pprd;
+	pprd = nullptr;
 }
 
-void SelectAll::ViewProgress()
+void SelectAll::Cancel()
 {
-	Wait_Download WD = new Wait_Download();
-	WD.moveToThread(QApplication::instance()->thread());
-	WD.setVisible(true);
-	WD.update();
-	while (progress != 100)
-	{
-		WD.setVisible(true);
-		WD.WaitChanged(progress);
-		WD.update();
-	}
+	exit(0);
 }
 
 SelectAll::~SelectAll()
 {
-	if (pWD != nullptr)
-		delete pWD;
+	if (pprd != nullptr)
+	{
+		delete pprd;
+		pprd = nullptr;
+	}
 }
 
 void SelectAll::ResetSelectAll()

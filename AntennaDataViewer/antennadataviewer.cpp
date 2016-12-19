@@ -61,7 +61,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 			ui.listDBSelect->insertItem(i, selectPars[i]);
 		}
 
-		pSelAll = new SelectAll(&core);
+		pSelAll = new SelectAll(&core, this);
 
 		pSelExs = new SelectExperiments(pSelAll, this);
 		connect(pSelExs, SIGNAL(ExperimentsOk()), this, SLOT(ExperimentsOk()));
