@@ -101,7 +101,7 @@ private slots:
 	void ChangeDB();
 	void CopyDB();
 	void DelFromDB();
-	void ExperimentDelete();
+	void ResetWidgets();
 };
 
 #endif // ANTENNADATAVIEWER_H

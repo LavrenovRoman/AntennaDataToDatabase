@@ -108,6 +108,15 @@ void AntennaDataViewer::Init()
 	ui.PlotWidget->replot();
 }
 
+void AntennaDataViewer::ResetWidgets()
+{
+	pSelExs->Reset();
+	pSelEx->Reset();
+	pSelAnt->Reset();
+	pSelExAnt->Clear();
+	Init();
+}
+
 void AntennaDataViewer::ChangeDB()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, QString::fromLocal8Bit("Выберите новую базу данных"), QString::fromLocal8Bit(dirDB.c_str()), tr("Database Files (*.fdb)"));
@@ -130,11 +139,7 @@ void AntennaDataViewer::ChangeDB()
 	{
 		setVisible(false);
 		pSelAll->Reset();
-		pSelExs->Reset();
-		pSelEx->Reset();
-		pSelAnt->Reset();
-		pSelExAnt->Clear();
-		Init();		
+		ResetWidgets();
 		setVisible(true);
 	}
 }
@@ -153,19 +158,8 @@ void AntennaDataViewer::DelFromDB()
 	}
 	pDelEx = new DeleteExperiment(pSelAll, this);
 	pDelEx->setVisible(true);
-	connect(pDelEx, SIGNAL(DeleteExperimentOk()), this, SLOT(ExperimentDelete()));
+	connect(pDelEx, SIGNAL(DeleteExperimentOk()), this, SLOT(ResetWidgets()));
 	connect(pDelEx, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
-}
-
-void AntennaDataViewer::ExperimentDelete()
-{
-	//setVisible(false);
-	pSelExs->Reset();
-	pSelEx->Reset();
-	pSelAnt->Reset();
-	pSelExAnt->Clear();
-	Init();
-	//setVisible(true);
 }
 
 void AntennaDataViewer::CreateLists()
