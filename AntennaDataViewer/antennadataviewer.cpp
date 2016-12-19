@@ -61,7 +61,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 			ui.listDBSelect->insertItem(i, selectPars[i]);
 		}
 
-		pSelAll = new SelectAll(&core, this);
+		pSelAll = new SelectAll(&core);
 
 		pSelExs = new SelectExperiments(pSelAll, this);
 		connect(pSelExs, SIGNAL(ExperimentsOk()), this, SLOT(ExperimentsOk()));
@@ -117,11 +117,13 @@ void AntennaDataViewer::ChangeDB()
 	}
 	else
 	{
-		pSelAll->ResetSelectAll();
+		setVisible(false);
+		pSelAll->Reset();
 		pSelExs->Reset();
 		pSelEx->Reset();
 		pSelAnt->Reset();
 		pSelExAnt->Clear();
+		setVisible(true);
 	}
 }
 

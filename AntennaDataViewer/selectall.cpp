@@ -11,19 +11,22 @@ using namespace std;
 #pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
 #endif
 
-SelectAll::SelectAll(Core* pCore, QWidget *parent) : QObject(parent)
+SelectAll::SelectAll(Core* pCore)
 {
 	pkCore = pCore;
+	Reset();
+}
 
+void SelectAll::Reset()
+{
 	progress = 0;
-	pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, parent, Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
+	pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, nullptr, Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 	pprd->setWindowTitle(QString::fromLocal8Bit("Подождите"));
 	pprd->setWindowModality(Qt::WindowModal);
 	pprd->setModal(true);
 	pprd->setMinimumDuration(1);
 	pprd->setValue(progress.load());
 	QApplication::processEvents(QEventLoop::AllEvents);
-	QObject::connect(pprd, SIGNAL(canceled()), this, SLOT(Cancel()));
 	pprd->show();
 
 	std::thread reset_func(&SelectAll::ResetSelectAll, this);
@@ -40,7 +43,6 @@ SelectAll::SelectAll(Core* pCore, QWidget *parent) : QObject(parent)
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue;
 		}
-		//qDebug() << progress.load();
 		pprd->setValue(progress.load());
 		pprd->update();
 	}

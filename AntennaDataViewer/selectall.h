@@ -4,7 +4,6 @@
 #include "Core.h"
 #include <QProgressDialog>
 #include <QStringList>
-#include <QObject>
 #include <atomic>
 
 class Antenna;
@@ -21,13 +20,13 @@ struct ViewDataExp
 	int IdAntenna;
 };
 
-class SelectAll : public QObject
+class SelectAll
 {
-	Q_OBJECT
 
 public:
-	SelectAll(Core* pCore, QWidget *parent = 0);
+	SelectAll(Core* pCore);
 	~SelectAll();
+	void Reset();
 	void ResetSelectAll();
 
 	std::vector<int> * GetExpsID();
