@@ -101,6 +101,15 @@
     <ClCompile Include="GeneratedFiles\Release\moc_selectexperiments.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="deleteexperiment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_deleteexperiment.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_deleteexperiment.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="antennadataviewer.h">
@@ -142,6 +151,12 @@
     <CustomBuild Include="selectall.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="deleteexperiment.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="deleteexperiment.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_antennadataviewer.h">
@@ -160,6 +175,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_selectexperiments.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_deleteexperiment.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

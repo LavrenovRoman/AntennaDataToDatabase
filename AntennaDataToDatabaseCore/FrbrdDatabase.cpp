@@ -188,6 +188,34 @@ int FrbrdDatabase::Request(std::string requestStr, int countSelect, std::vector<
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/// @details Удаление эксперимента по ID из БД
+int FrbrdDatabase::DeleteExperiment(int idExperiment)
+{
+	if ((*dataBase_)->Connected())
+	{
+		IBPP::Transaction trDelExp = IBPP::TransactionFactory(*dataBase_);
+		trDelExp->Start();
+		try
+		{
+			IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trDelExp);
+			st->Prepare("delete from EXPERIMENT where EXPERIMENT.ID=?");
+			st->Set(1, idExperiment);
+			st->Execute();
+			trDelExp->Commit();
+		}
+		catch (...)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		return -2;
+	}
+	return 0;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /// @details Получение всех экспериментов из БД
 int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>& exps, bool fullComment)
 {

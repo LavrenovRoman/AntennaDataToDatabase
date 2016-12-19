@@ -35,6 +35,9 @@ public:
 
 	/// @brief Получение всех антенн по ID эксперимента из БД
 	int GetAntennas(std::vector<Antenna>& antennas, std::vector<int>& antennasID, int idExperiment);
+
+	/// @brief Удаление эксперимента по ID из БД
+	int DeleteExperiment(int idExperiment);
 	
 private:
 	IBPP::Database* dataBase_;

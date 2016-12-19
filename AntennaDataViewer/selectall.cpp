@@ -69,6 +69,10 @@ SelectAll::~SelectAll()
 
 void SelectAll::ResetSelectAll()
 {
+	ids.clear();
+	exps.clear();
+	ants.clear();
+	antsids.clear();
 	pkCore->GetExperiments(ids, exps);
 	for (int i = 0; i < ids.size(); ++i)
 	{
@@ -79,6 +83,21 @@ void SelectAll::ResetSelectAll()
 		pkCore->GetAntennasByExperiment(ants[i], antsids[i], ids[i]);
 		progress = 100*(i+1)/ids.size();
 	}
+}
+
+void SelectAll::DeleteExp(int idExp)
+{
+	int i;
+	for (i = 0; i < ids.size(); ++i)
+	{
+		if (ids.at(i) == idExp)
+			break;
+	}
+	ids.erase(ids.begin() + i);
+	antsids.erase(antsids.begin() + i);
+	exps.erase(exps.begin() + i);
+	ants.erase(ants.begin() + i);
+	pkCore->DeleteExperiment(idExp);
 }
 
 std::vector<int> * SelectAll::GetExpsID() { return &ids; }

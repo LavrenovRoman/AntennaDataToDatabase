@@ -20,6 +20,7 @@ public:
 	Core();
 	~Core();
 
+	int DeleteExperiment(int idExp);
 	int SetDonorDB();
 	int ConnectDatabase(const char* pathDB = nullptr);
 	int OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles);

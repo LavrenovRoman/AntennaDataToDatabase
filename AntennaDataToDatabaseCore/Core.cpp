@@ -288,3 +288,8 @@ int Core::GetAntennasByExperiment(std::vector<Antenna>& antennas, std::vector<in
 {
 	return pFBDataBase->GetAntennas(antennas, antennasID, idExperiment);
 }
+
+int Core::DeleteExperiment(int idExp)
+{
+	return pFBDataBase->DeleteExperiment(idExp);
+}

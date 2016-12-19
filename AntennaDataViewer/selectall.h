@@ -29,6 +29,7 @@ public:
 	void Reset();
 	void ResetSelectAll();
 
+	void DeleteExp(int idExp);
 	std::vector<int> * GetExpsID();
 	std::vector<std::vector<int>> * GetAntsID();
 	std::vector<Experiment> * GetExps();

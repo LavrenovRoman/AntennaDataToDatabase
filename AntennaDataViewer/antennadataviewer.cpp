@@ -47,6 +47,8 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	connect(ui.PlotWidget, SIGNAL(mousePress(QMouseEvent *)), this, SLOT(PlotMousePress(QMouseEvent *)));
 	connect(ui.PlotWidget, SIGNAL(mouseRelease(QMouseEvent *)), this, SLOT(PlotMouseRelease(QMouseEvent *))); 
 	connect(ui.actChangeDB, SIGNAL(triggered()), this, SLOT(ChangeDB()));
+	connect(ui.actCopyDB, SIGNAL(triggered()), this, SLOT(CopyDB()));
+	connect(ui.actDelDataDB, SIGNAL(triggered()), this, SLOT(DelFromDB()));
 
 	selectPars << QString::fromLocal8Bit("Поиск по всей базе данных");
 	selectPars << QString::fromLocal8Bit("Выбрать некоторые эксперименты");
@@ -79,31 +81,39 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 		connect(pSelExAnt, SIGNAL(SelectExpAntOk()), this, SLOT(SelectExpAntOk()));
 		//connect(pSelAnt, SIGNAL(Cancel()), this, SLOT(SelectExpAntCancel()));
 		
-		VisibleWidget();
-
-		currentInput  = -1;
-		currentOutput = -1;
-
-		currentMode = -1;
-		DBRowChanged(ui.listDBSelect->item(DB_SelectAll));
+		Init();
 	}
 	else
 	{
 		QMessageBox::information(NULL,QString::fromLocal8Bit("Ошибка"),QString::fromLocal8Bit("Не могу подключится к БД, проверьте файл Options.ini"));
 	}
+	dirDB = core.GetCurrentDir();
+}
+
+void AntennaDataViewer::Init()
+{
+	VisibleWidget();
+	currentInput = -1;
+	currentOutput = -1;
+	currentMode = -1;
+	DBRowChanged(ui.listDBSelect->item(DB_SelectAll));
 	res.clear();
 	IdsExperiment.clear();
 	IdExperiment = -1;
 	IdAntenna = -1;
 	selectedPoints.clear();
 	selectedY = -1.0;
-
-	dirDB = core.GetCurrentDir();
+	ui.PlotWidget->clearGraphs();//Если нужно, но очищаем все графики
+	ui.PlotWidget->clearItems();
+	ui.PlotWidget->replot();
 }
 
 void AntennaDataViewer::ChangeDB()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, QString::fromLocal8Bit("Выберите новую базу данных"), QString::fromLocal8Bit(dirDB.c_str()), tr("Database Files (*.fdb)"));
+	
+	if (fileName.isEmpty()) return;
+
 	QFileInfo fi(fileName);
 	QDir tmp_dir(fi.dir());
 	dirDB = tmp_dir.absolutePath().toStdString();
@@ -113,6 +123,7 @@ void AntennaDataViewer::ChangeDB()
 		if (core.ConnectDatabase() != 0)
 		{
 			QMessageBox::information(NULL, QString::fromLocal8Bit("Ошибка"), QString::fromLocal8Bit("Не могу подключится к БД, проверьте файл Options.ini"));
+			exit(0);
 		}
 	}
 	else
@@ -123,8 +134,38 @@ void AntennaDataViewer::ChangeDB()
 		pSelEx->Reset();
 		pSelAnt->Reset();
 		pSelExAnt->Clear();
+		Init();		
 		setVisible(true);
 	}
+}
+
+void AntennaDataViewer::CopyDB()
+{
+
+}
+
+void AntennaDataViewer::DelFromDB()
+{
+	if (pDelEx != nullptr)
+	{
+		delete pDelEx;
+		pDelEx = nullptr;
+	}
+	pDelEx = new DeleteExperiment(pSelAll, this);
+	pDelEx->setVisible(true);
+	connect(pDelEx, SIGNAL(DeleteExperimentOk()), this, SLOT(ExperimentDelete()));
+	connect(pDelEx, SIGNAL(Cancel()), this, SLOT(ExperimentCancel()));
+}
+
+void AntennaDataViewer::ExperimentDelete()
+{
+	//setVisible(false);
+	pSelExs->Reset();
+	pSelEx->Reset();
+	pSelAnt->Reset();
+	pSelExAnt->Clear();
+	Init();
+	//setVisible(true);
 }
 
 void AntennaDataViewer::CreateLists()
@@ -175,6 +216,7 @@ AntennaDataViewer::~AntennaDataViewer()
 	if (pSelExs   != nullptr) delete pSelExs;
 	if (pSelAnt   != nullptr) delete pSelAnt;
 	if (pSelExAnt != nullptr) delete pSelExAnt;
+	if (pDelEx    != nullptr) delete pDelEx;
 }
 
 void AntennaDataViewer::ClickedCalcCorr()

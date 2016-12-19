@@ -7,6 +7,7 @@
 #include "selectantenna.h"
 #include "selectedantennas.h"
 #include "selectexperiment.h"
+#include "deleteexperiment.h"
 #include "selectexperiments.h"
 
 struct SelectedArea
@@ -53,6 +54,7 @@ public:
 private:
 	Ui::AntennaDataViewerClass ui;
 	Core core;
+	DeleteExperiment * pDelEx = nullptr;
 	SelectExperiments * pSelExs = nullptr;
 	SelectExperiment * pSelEx = nullptr;
 	SelectAntenna * pSelAnt = nullptr;
@@ -79,6 +81,7 @@ private:
 	std::string dirDB;
 
 private slots:
+	void Init();
 	void ClickedCalcCorr();
 	void CreateGraph();
 	void DBRowChanged(QListWidgetItem* pSelectRow);
@@ -96,6 +99,9 @@ private slots:
 	void ViewDBSelect(int par);
 	void VisibleWidget(QDialog * widget = nullptr);
 	void ChangeDB();
+	void CopyDB();
+	void DelFromDB();
+	void ExperimentDelete();
 };
 
 #endif // ANTENNADATAVIEWER_H
