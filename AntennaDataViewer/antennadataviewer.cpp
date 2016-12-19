@@ -213,11 +213,12 @@ void AntennaDataViewer::CreateLists()
 AntennaDataViewer::~AntennaDataViewer()
 {
 	if (pSelAll   != nullptr) delete pSelAll;
-	if (pSelEx    != nullptr) delete pSelEx;
-	if (pSelExs   != nullptr) delete pSelExs;
-	if (pSelAnt   != nullptr) delete pSelAnt;
+	if (pSelEx    != nullptr) delete pSelEx;   
+	if (pSelExs   != nullptr) delete pSelExs;  
+	if (pSelAnt   != nullptr) delete pSelAnt;  
 	if (pSelExAnt != nullptr) delete pSelExAnt;
-	if (pDelEx    != nullptr) delete pDelEx;
+	if (pDelEx    != nullptr) delete pDelEx;   
+	if (pCopyDB   != nullptr) delete pCopyDB;  
 }
 
 void AntennaDataViewer::ClickedCalcCorr()
