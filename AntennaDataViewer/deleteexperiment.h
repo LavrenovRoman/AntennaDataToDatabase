@@ -5,8 +5,6 @@
 #include "ui_deleteexperiment.h"
 #include "selectall.h"
 
-class Experiment;
-
 class DeleteExperiment : public QDialog
 {
 	Q_OBJECT

@@ -3,7 +3,6 @@
 
 #include "Core.h"
 #include <QProgressDialog>
-#include <QStringList>
 #include <atomic>
 
 class Antenna;

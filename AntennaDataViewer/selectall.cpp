@@ -1,6 +1,6 @@
 #include "selectall.h"
 #include "Antenna.h"
-#include "thread"
+#include <thread>
 #include <QApplication>
 
 using namespace std;

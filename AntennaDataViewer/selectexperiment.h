@@ -5,8 +5,6 @@
 #include "ui_selectexperiment.h"
 #include "selectall.h"
 
-class Experiment;
-
 class SelectExperiment : public QDialog
 {
 	Q_OBJECT

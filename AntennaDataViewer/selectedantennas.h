@@ -5,9 +5,6 @@
 #include "ui_selectedantennas.h"
 #include "selectall.h"
 
-class Experiment;
-class Antenna;
-
 class SelectedAntennas : public QDialog
 {
 	Q_OBJECT
