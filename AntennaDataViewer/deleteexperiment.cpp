@@ -54,7 +54,7 @@ void DeleteExperiment::ExpChanged(int expChange)
 		for (size_t i = 0; i<pkCoreData->GetExps()->at(expChange).cycles.size(); ++i)
 		{
 			cicles += QString::fromStdString(pkCoreData->GetExps()->at(expChange).cycles[i].name) + " " + QString::number(pkCoreData->GetExps()->at(expChange).cycles[i].pBegin) + " " + QString::number(pkCoreData->GetExps()->at(expChange).cycles[i].pEnd) + " " + QString::number(pkCoreData->GetExps()->at(expChange).cycles[i].pStep);
-			cicles += "   ";
+			if (i != pkCoreData->GetExps()->at(expChange).cycles.size()-1)	cicles += "   ";
 		}
 		ui.leCicles->setText(cicles);
 

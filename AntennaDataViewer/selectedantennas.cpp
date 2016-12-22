@@ -123,7 +123,7 @@ void SelectedAntennas::ExpAntChanged(int expantChange)
 		for (size_t i = 0; i<pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles.size(); ++i)
 		{
 			cicles += QString::fromStdString(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].name) + " " + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].pBegin) + " " + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].pEnd) + " " + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].pStep);
-			cicles += "   ";
+			if (i != pkCoreData->GetExps()->at(expantChange).cycles.size() - 1)	cicles += "   ";
 		}
 		ui.leCicles->setText(cicles);
 
@@ -134,7 +134,7 @@ void SelectedAntennas::ExpAntChanged(int expantChange)
 		{
 			if (pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].name == "L[0]")
 				ciclesA += QString::fromStdString(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].name) + " " + QString::number(pkCoreData->GetAnts()->at(selectedExpId[expantChange]).at(selectedAntId[expantChange]).inputPar.Radiator.ScaleX);
-			ciclesA += "   ";
+			if (i != pkCoreData->GetExps()->at(expantChange).cycles.size() - 1)	cicles += "   ";
 		}
 		ui.leCicles_2->setText(ciclesA);
 	}
