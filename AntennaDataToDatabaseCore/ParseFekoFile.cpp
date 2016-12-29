@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <cstdlib>
 #include <cstddef>
+#include <memory>
 
 using namespace std;
 
@@ -74,8 +75,36 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 	_antenna.outputPar.findDIRECTIVITY_PATTERN_THETA_PHI        = false;
 	_antenna.outputPar.findDIRECTIVITY_PATTERN_PARAMS           = false;
 	_antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS       = false;
+	
 
 	_antenna.aborted = false;
+
+	std::string allFile(
+		(std::istreambuf_iterator<char>(
+		*(std::unique_ptr<std::ifstream>(
+		new std::ifstream(_file.c_str()))).get())),
+		std::istreambuf_iterator<char>());
+
+
+	if (allFile.find("DATA FOR MEMORY USAGE") != string::npos)				  { _antenna.outputPar.findDATA_FOR_MEMORY_USAGE = true; }
+	if (allFile.find("DATA FOR DIELECTRIC MEDIA") != string::npos)            { _antenna.outputPar.findDATA_FOR_DIELECTRIC_MEDIA = true; }
+	if (allFile.find("EXCITATION BY VOLTAGE SOURCE AT") != string::npos)      { _antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE = true; }
+//	if (allFile.find("STORAGE") != string::npos)                              { _antenna.outputPar.findDISTRIBUTED_STORAGE_OF_MATRIX        = true;}
+	if (allFile.find("DATA OF THE VOLTAGE SOURCE") != string::npos)           { _antenna.outputPar.findDATA_OF_THE_VOLTAGE_SOURCE = true; }
+	if (allFile.find("SCATTERING PARAMETERS") != string::npos)                { _antenna.outputPar.findSCATTERING_PARAMETERS = true; }
+	if (allFile.find("LOSSES IN DIELECTRIC VOLUME ELEMENTS") != string::npos) { _antenna.outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS = true; }
+	if (allFile.find("SUMMARY OF LOSSES") != string::npos)                    { _antenna.outputPar.findSUMMARY_OF_LOSSES = true; }
+	if (allFile.find("SCATTERED ELECTRIC FIELD STRENGTH") != string::npos)    { _antenna.outputPar.findDIRECTIVITY_PATTERN_THETA_PHI = true; }
+	if (allFile.find("directivity/gain") != string::npos)                     { _antenna.outputPar.findDIRECTIVITY_PATTERN_PARAMS = true; }
+	if (allFile.find("Data for the individual layers") != string::npos)       { _antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS = true; }
+
+	if (allFile.find("Finished:") == string::npos)
+	{
+		_antenna.aborted = true;
+		return;
+	}
+
+	/*
 	bool findFinish = false;
 	ifstream fileFinish(_file.c_str());
 	_antenna.pathOut = _file;
@@ -109,6 +138,7 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 		_antenna.aborted = true;
 		return;
 	}
+	*/
 	
 	ifstream file(_file.c_str());
 	if (file.is_open())

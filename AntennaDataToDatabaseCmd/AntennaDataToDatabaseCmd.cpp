@@ -4,7 +4,10 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <iostream>
-#include <string>
+#include <locale>
+#include <codecvt>
+
+//#include <QString>
 
 using namespace std;
 
@@ -16,16 +19,20 @@ using namespace std;
 #pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
 #endif
 
-int _tmain(int argc, char* argv[])
+int _tmain(int argc, _TCHAR* argv[])
 {
 	int cntOutFiles = 0;
 	int cntPreFiles = 0;
 
-	std::string strdir = argv[1];
+	//QString strdir = QString::fromWCharArray(argv[1]);
+	std::wstring wdir(argv[1]);
+	using convert_type = std::codecvt_utf8<wchar_t>;
+	std::wstring_convert<convert_type, wchar_t> converter;
+	std::string sdir = converter.to_bytes(wdir);
 
 	Core core;
 	if (core.ConnectDatabase()==0) {
-		if (core.OpenDirectory(strdir, cntOutFiles, cntPreFiles)==0) {
+		if (core.OpenDirectory(sdir/*strdir.toStdString()*/, cntOutFiles, cntPreFiles) == 0) {
 			if (core.ReadFiles()==0) {
 				if (core.PrepareExperimentBeforeWrite() == 0 && core.WriteData() == 0)
 				{
