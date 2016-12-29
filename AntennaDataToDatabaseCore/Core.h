@@ -11,9 +11,6 @@ struct Experiment;
 class FrbrdDatabase;
 class ParseFekoFile;
 
-class QString;
-
-
 class CORE_API Core
 {
 public:
@@ -23,7 +20,7 @@ public:
 	int DeleteExperiment(int idExp);
 	int SetDonorDB();
 	int ConnectDatabase(const char* pathDB = nullptr);
-	int OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles);
+	int OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles);
 	int ReadFiles();
 	int WriteData();
 	int PrepareExperimentBeforeWrite();
@@ -46,7 +43,7 @@ private:
 	bool donorDB;
 	std::string pathDonor, pathRecipient, pathCurrentDB;
 
-	void SetPaths(QString qpath);
+	void SetPaths(std::string spath);
 };
 
 #endif // CORE_H

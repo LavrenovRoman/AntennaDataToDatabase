@@ -12,15 +12,13 @@
 #include <cstdlib>
 #include <cstddef>
 
-#include <QString>
-
 using namespace std;
 
-void ParseFekoFile::ParseFileComment(QString _file, Experiment& _experiment)
+void ParseFekoFile::ParseFileComment(std::string _file, Experiment& _experiment)
 {
 	std::string current_str, word, token;
 	std::vector<std::string> vs;
-	ifstream file(_file.toLocal8Bit().constData());
+	ifstream file(_file.c_str());
 	if (file.is_open())
 	{
 		getline(file, current_str);
@@ -59,7 +57,7 @@ void ParseFekoFile::ParseFileComment(QString _file, Experiment& _experiment)
 	}
 }
 
-void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
+void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 {
 	int valueInt, nomer = 0;
 	double valueDouble;
@@ -79,8 +77,8 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 
 	_antenna.aborted = false;
 	bool findFinish = false;
-	ifstream fileFinish(_file.toLocal8Bit().constData());
-	_antenna.pathOut = _file.toLocal8Bit().constData();
+	ifstream fileFinish(_file.c_str());
+	_antenna.pathOut = _file;
 	while(!(fileFinish.eof()))
 	{
 		if (current_str.find("Finished:") == string::npos)
@@ -112,7 +110,7 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 		return;
 	}
 	
-	ifstream file(_file.toLocal8Bit().constData());
+	ifstream file(_file.c_str());
 	if (file.is_open())
 	{
 #pragma region REG_DATA_FOR_MEMORY_USAGE
@@ -1273,15 +1271,15 @@ void ParseFekoFile::ParseFileOut(QString _file, Antenna& _antenna)
 	valueInt = 0;
 }
 
-void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
+void ParseFekoFile::ParseFilePre(std::string _file, Antenna& _antenna)
 {
 	//setlocale(LC_ALL, "Russian");
 	int nomer = 0;
 	std::string current_str, word, token;
 
 	bool findFinish = false;
-	ifstream fileFinishEnd(_file.toLocal8Bit().constData());
-	_antenna.pathPre = _file.toLocal8Bit().constData();
+	ifstream fileFinishEnd(_file.c_str());
+	_antenna.pathPre = _file;
 	while(!(fileFinishEnd.eof()))
 	{
 		if (current_str.find("END PHYSICAL ANTENNA PARAMS") == string::npos)
@@ -1306,7 +1304,7 @@ void ParseFekoFile::ParseFilePre(QString _file, Antenna& _antenna)
 	}
 
 	std::vector<std::string> vs;
-	ifstream file(_file.toLocal8Bit().constData());
+	ifstream file(_file.c_str());
 	if (file.is_open())
 	{
 		while(!(file.eof()))

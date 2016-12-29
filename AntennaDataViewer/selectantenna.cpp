@@ -79,15 +79,7 @@ void SelectAntenna::AntChanged(int antChange)
 	{
 		ui.okButton->setEnabled(true);
 
-		int expChange;
-		for (int i = 0; i < pkCoreData->GetExpsID()->size(); i++)
-		{
-			if (pkCoreData->GetExpsID()->at(i) == IdExperiment)
-			{
-				expChange = i;
-				break;
-			}
-		}
+		int expChange = std::find(pkCoreData->GetExpsID()->begin(), pkCoreData->GetExpsID()->end(), IdExperiment) - pkCoreData->GetExpsID()->begin();
 
 		QString cicles;
 		for (size_t i = 0; i<pkCoreData->GetExps()->at(expChange).cycles.size(); ++i)

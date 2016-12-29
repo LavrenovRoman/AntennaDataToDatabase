@@ -1,6 +1,6 @@
 #include <iostream>
 #include <QStringList>
-#include <QFileDialog>
+#include <QDir>
 #include <QSettings>
 #include "Core.h"
 #include "FrbrdDatabase.h"
@@ -65,9 +65,9 @@ std::string Core::GetCurrentDir()
 	return path;
 }
 
-void Core::SetPaths(QString qpath)
+void Core::SetPaths(std::string spath)
 {
-	QSettings sett(qpath, QSettings::IniFormat);
+	QSettings sett(QString::fromLocal8Bit(spath.c_str()), QSettings::IniFormat);
 	QString v1 = QString::fromLocal8Bit("Path");
 	pathRecipient = sett.value(v1).toString().toStdString();
 	QString v2 = QString::fromLocal8Bit("PathDonorDB");
@@ -103,10 +103,9 @@ int Core::ConnectDatabase(const char* pathDB)
 		full_path = full_path + fOptions;
 		
 		cout << "Settings from file - " << full_path << endl;
-		QString qpath = QString::fromStdString(full_path);
-		QSettings sett(qpath, QSettings::IniFormat);
+		QSettings sett(QString::fromStdString(full_path), QSettings::IniFormat);
 		server = sett.value("Server").toString().toStdString();
-		SetPaths(qpath);
+		SetPaths(full_path);
 		if (!donorDB)
 		{
 			path = pathRecipient;
@@ -140,12 +139,13 @@ int Core::ConnectDatabase(const char* pathDB)
 	return 0;
 }
 
-int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
+int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
 {
-	if (strdir != "")
+	if (!strdir.empty())
 	{
-		QDir dir(strdir);
-		cout << "Directory =" << strdir.toLocal8Bit().constData() << endl;
+		QString qstrdir = QString::fromLocal8Bit(strdir.c_str());
+		QDir dir(qstrdir);
+		cout << "Directory =" << strdir.c_str() << endl;
 		outs = dir.entryList(QStringList("*.out"));
 		pres = dir.entryList(QStringList("*.pre"));
 		cout << "Find " << outs.size() << " out files" << endl;
@@ -171,7 +171,7 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 			out_names = outs;
 			for (int i=0; i<outs.size(); ++i)
 			{
-				outs[i] = strdir + "/" + outs[i];
+				outs[i] = qstrdir + "/" + outs[i];
 			}
 		}
 		if (pres.size() > 0)
@@ -179,7 +179,7 @@ int Core::OpenDirectory(QString strdir, int &cntOutFiles, int &cntPreFiles)
 			pre_names = pres;
 			for (int i=0; i<pres.size(); ++i)
 			{
-				pres[i] = strdir + "/" + pres[i];
+				pres[i] = qstrdir + "/" + pres[i];
 			}
 		}
 		if (outs.size() > 0 && pres.size() > 0)
@@ -211,7 +211,7 @@ int Core::ReadFiles()
 		QFileInfo filetemp(outs[0]);
 		QDir dir(filetemp.absoluteDir());
 		QString experiment_name = dir.absolutePath() + QString("/comment.txt");
-		parseFeko.ParseFileComment(experiment_name, *(pExperiment.get()));
+		parseFeko.ParseFileComment(experiment_name.toStdString(), *(pExperiment.get()));
 
 		for (int i=0; i<outs.size(); ++i)
 		{
@@ -223,14 +223,14 @@ int Core::ReadFiles()
 			name = pre_names.at(i).toLocal8Bit();
 			cout << name.toStdString() << endl;
 			file = pres[i];
-			parseFeko.ParseFilePre(file, antennas[i]);
+			parseFeko.ParseFilePre(file.toStdString(), antennas[i]);
 
 			if (antennas[i].aborted) continue;
 
 			name = out_names.at(i).toLocal8Bit();
 			cout << name.toStdString() << endl;
 			file = outs[i];
-			parseFeko.ParseFileOut(file, antennas[i]);
+			parseFeko.ParseFileOut(file.toStdString(), antennas[i]);
 
 			if (antennas[i].aborted) 
 			{

@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <iostream>
-
-#include <QStringList>
+#include <string>
 
 using namespace std;
 
@@ -17,12 +16,12 @@ using namespace std;
 #pragma comment(lib, "../lib/AntennaDataToDatabaseCore32.lib")
 #endif
 
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, char* argv[])
 {
 	int cntOutFiles = 0;
 	int cntPreFiles = 0;
 
-	QString strdir = QString::fromWCharArray(argv[1]);
+	std::string strdir = argv[1];
 
 	Core core;
 	if (core.ConnectDatabase()==0) {

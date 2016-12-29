@@ -1,5 +1,4 @@
-
-class QString;
+#include <string>
 
 struct Antenna;
 struct Experiment;
@@ -8,9 +7,9 @@ enum TYPE;
 class ParseFekoFile
 {
 public:
-	void ParseFileComment(QString _file, Experiment& _experiment);
-	void ParseFileOut(QString _file, Antenna& _antenna);
-	void ParseFilePre(QString _file, Antenna& _antenna);
+	void ParseFileComment(std::string _file, Experiment& _experiment);
+	void ParseFileOut(std::string _file, Antenna& _antenna);
+	void ParseFilePre(std::string _file, Antenna& _antenna);
 
 private:
 	TYPE _type;

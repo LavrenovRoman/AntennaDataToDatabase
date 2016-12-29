@@ -48,7 +48,7 @@ void AntennaDataToDatabase::ClickedOpenDir()
 	int cntOutFiles = 0;
 	int cntPreFiles = 0;
 
-	int res = core.OpenDirectory(strdir, cntOutFiles, cntPreFiles);
+	int res = core.OpenDirectory(strdir.toStdString(), cntOutFiles, cntPreFiles);
 	ui.lbl_FindFiles->setText(QString::fromLocal8Bit("Найдено out файлов: ") + QString::number(cntOutFiles) + QString::fromLocal8Bit("\n") + QString::fromLocal8Bit("Найдено pre файлов: ") + QString::number(cntPreFiles));
 	ui.lbl_Result->setText(QString::fromLocal8Bit(""));
 

@@ -3,7 +3,6 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_antennadataviewer.h"
-#include <QStringList>
 #include "widgetcopydb.h"
 #include "selectantenna.h"
 #include "selectedantennas.h"
@@ -64,7 +63,7 @@ private:
 	SelectAntenna * pSelAnt = nullptr;
 	SelectedAntennas * pSelExAnt = nullptr;
 	SelectAll *pSelAll = nullptr;
-	QStringList inputPars, outputPars, selectPars;
+
 	std::vector<std::vector<double>> res;
 	QString xGraphTitle, yGraphTitle; 
 

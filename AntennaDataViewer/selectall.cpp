@@ -87,12 +87,7 @@ void SelectAll::ResetSelectAll()
 
 void SelectAll::DeleteExp(int idExp)
 {
-	int i;
-	for (i = 0; i < ids.size(); ++i)
-	{
-		if (ids.at(i) == idExp)
-			break;
-	}
+	int i = std::find(ids.begin(), ids.end(), idExp) - ids.begin();
 	ids.erase(ids.begin() + i);
 	antsids.erase(antsids.begin() + i);
 	exps.erase(exps.begin() + i);

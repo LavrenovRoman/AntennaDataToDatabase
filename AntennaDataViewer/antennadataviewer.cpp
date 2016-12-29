@@ -50,6 +50,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	connect(ui.actCopyDB, SIGNAL(triggered()), this, SLOT(CopyDB()));
 	connect(ui.actDelDataDB, SIGNAL(triggered()), this, SLOT(DelFromDB()));
 
+	QStringList selectPars;
 	selectPars << QString::fromLocal8Bit("Поиск по всей базе данных");
 	selectPars << QString::fromLocal8Bit("Выбрать некоторые эксперименты");
 	selectPars << QString::fromLocal8Bit("Выбрать конкретный эксперимент");
@@ -173,8 +174,7 @@ void AntennaDataViewer::CreateLists()
 {
 	ui.listParInput->clear();
 	ui.listParOutput->clear();
-	inputPars.clear();
-	outputPars.clear();
+	QStringList inputPars, outputPars;
 	if (!parInsideAntenna)
 	{
 		inputPars << QString::fromLocal8Bit("Масштаб по Х");
@@ -538,7 +538,7 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	ui.listDBSelect->clearFocus();
 
 	int selectRow = -1;
-	for (size_t i=0; i<selectPars.size(); ++i)
+	for (size_t i = 0; i<ui.listDBSelect->count(); ++i)
 	{
 		if (ui.listDBSelect->item(i) == pSelectRow)
 		{
