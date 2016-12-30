@@ -2,7 +2,6 @@
 #define SELECTALL_H
 
 #include "Core.h"
-#include <QProgressDialog>
 #include <atomic>
 
 class Antenna;
@@ -42,7 +41,6 @@ protected:
 
 private:
 	Core * pkCore = nullptr;
-	QProgressDialog* pprd = nullptr;
 	std::atomic<int> progress;
 	void Cancel();
 };

@@ -2,6 +2,7 @@
 #include "Antenna.h"
 #include <thread>
 #include <QApplication>
+#include <QProgressDialog>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ SelectAll::SelectAll(Core* pCore)
 void SelectAll::Reset()
 {
 	progress = 0;
-	pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, nullptr, Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
+	QProgressDialog* pprd = new QProgressDialog(QString::fromLocal8Bit("Загрузка данных из БД"), QString::fromLocal8Bit("Отмена"), 0, 100, nullptr, Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 	pprd->setWindowTitle(QString::fromLocal8Bit("Подождите"));
 	pprd->setWindowModality(Qt::WindowModal);
 	pprd->setModal(true);
@@ -50,7 +51,6 @@ void SelectAll::Reset()
 	reset_func.join();
 
 	delete pprd;
-	pprd = nullptr;
 }
 
 void SelectAll::Cancel()
@@ -60,11 +60,6 @@ void SelectAll::Cancel()
 
 SelectAll::~SelectAll()
 {
-	if (pprd != nullptr)
-	{
-		delete pprd;
-		pprd = nullptr;
-	}
 }
 
 void SelectAll::ResetSelectAll()

@@ -34,7 +34,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (core.ConnectDatabase()==0) {
 		if (core.OpenDirectory(sdir/*strdir.toStdString()*/, cntOutFiles, cntPreFiles) == 0) {
 			if (core.ReadFiles()==0) {
-				if (core.PrepareExperimentBeforeWrite() == 0 && core.WriteData() == 0)
+				//if (core.PrepareExperimentBeforeWrite() == 0 && core.WriteData() == 0)
 				{
 					cout << "Success!" << endl;
 					system("pause");
