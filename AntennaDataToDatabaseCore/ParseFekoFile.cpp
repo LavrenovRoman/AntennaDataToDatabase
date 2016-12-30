@@ -66,7 +66,7 @@ void ParseFekoFile::ParseFileComment(std::string _file, Experiment& _experiment)
 
 void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 {
-	int valueInt, nomer = 0;
+	int valueInt = 0;
 	double valueDouble;
 	std::string words, token;
 	_antenna.pathOut = _file;
@@ -92,6 +92,7 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 		std::istreambuf_iterator<char>());
 
 	vsOut.clear();
+	vsOut.reserve(50000);
 	for (size_t i = 0; i < allFile.size(); ++i)
 	{
 		size_t beginS = i;
@@ -123,1048 +124,1040 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 	size_t cs = 0;
 	if (_antenna.outputPar.findDATA_FOR_MEMORY_USAGE)
 	{
-		while (cs < vsOut.size())
+		while (vsOut[cs].find("Surface of all triangles in m*m:") == string::npos && vsOut[cs].find("Length of the segments in m:") == string::npos) { cs++; }
+		if (_antenna.type == STRIPE || _antenna.type == PLANE)
 		{
-			while (vsOut[cs].find("Surface of all triangles in m*m:") == string::npos && vsOut[cs].find("Length of the segments in m:") == string::npos) { cs++; }
-			if (_antenna.type == STRIPE || _antenna.type == PLANE)
-			{
-				words = "Surface of all triangles in m*m:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					_antenna.outputPar._DATA_FOR_MEMORY_USAGE.SurfAllTri_MM = valueDouble;
-				}
-			}
-			if (_antenna.type == STRIPE || _antenna.type == WIRE)
-			{
-				words = "Length of the segments in m:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					_antenna.outputPar._DATA_FOR_MEMORY_USAGE.LengthAllSegms_M = valueDouble;
-				}
-			}
-
-			words = "DATA FOR MEMORY USAGE";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			words = "Number of metallic triangles:";
+			words = "Surface of all triangles in m*m:";
 			while (vsOut[cs].find(words) == string::npos) { cs++; }
 			{
 				stringstream ss(vsOut[cs]);
 				getline(ss, token, ':');
 				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicTri = valueInt;
+				valueDouble = stod(token);
+				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.SurfAllTri_MM = valueDouble;
 			}
-			words = "Number of dielectric triangles:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectrTri = valueInt;
-			}
-			words = "Number of aperture triangles:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureTri = valueInt;
-			}
-			words = "GO tr";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumGoTri = valueInt;
-			}
-			words = "windscreen tr";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWindscreenTri = valueInt;
-			}
-			words = "Number of FEM surface triangles:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFemSurfaceTri = valueInt;
-			}
-			words = "Number of modal port triangles:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumModalPortTri = valueInt;
-			}
-			words = "Number of metallic segments:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicSegms = valueInt;
-			}
-			words = "dielectr./magnet. cuboids:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDieMagnCubs = valueInt;
-			}
-			words = "tetrahedra";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumTetrahedra = valueInt;
-			}
-			words = "Number of edges in PO region:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesPORegion = valueInt;
-			}
-			words = "Number of wedges in PO region:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWedgesPORegion = valueInt;
-			}
-			words = "Number of Fock regions:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFockRegions = valueInt;
-			}
-			words = "Number of polygonal surfaces:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumPolySurfaces = valueInt;
-			}
-			words = "Number of UTD cylinders:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumUTDCylindres = valueInt;
-			}
-			words = "Number of metallic edges (MoM):";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesMoM = valueInt;
-			}
-			words = "Number of metallic edges (PO):";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesPO = valueInt;
-			}
-			words = "Number of dielectric edges (MoM):";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesMoM = valueInt;
-			}
-			words = "Number of dielectric edges (PO):";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesPO = valueInt;
-			}
-			words = "Number of aperture edges (MoM):";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureEdgesMoM = valueInt;
-			}
-			words = "Number of edges FEM/MoM surface:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesFEMMomSurf = valueInt;
-			}
-			words = "Number of nodes between segments:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumNodesBetweenSegms = valueInt;
-			}
-			words = "Number of connection points:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumConnectionPoints = valueInt;
-			}
-			words = "Number of dielectric cuboids:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricCuboids = valueInt;
-			}
-			words = "Number of magnetic cuboids:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMagneticCuboids = valueInt;
-			}
-			words = "Number of basis funct. for MoM:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctMoM = valueInt;
-			}
-			words = "Number of basis funct. for PO:";
-			while (vsOut[cs].find(words) == string::npos) { cs++; }
-			{
-				stringstream ss(vsOut[cs]);
-				getline(ss, token, ':');
-				getline(ss, token, ':');
-				valueInt = stoi(token);
-				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctPO = valueInt;
-			}
-			break;
 		}
-		while (cs < vsOut.size())
+		if (_antenna.type == STRIPE || _antenna.type == WIRE)
 		{
-			bool stop = false;
-			DATA_FOR_ONE_FREQ NEW_DATA_FOR_ONE_FREQ;
-			if (_antenna.outputPar.findDATA_FOR_DIELECTRIC_MEDIA)
+			words = "Length of the segments in m:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
 			{
-				words = "DATA FOR DIELECTRIC MEDIA";
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				_antenna.outputPar._DATA_FOR_MEMORY_USAGE.LengthAllSegms_M = valueDouble;
+			}
+		}
+
+		words = "DATA FOR MEMORY USAGE";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		words = "Number of metallic triangles:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicTri = valueInt;
+		}
+		words = "Number of dielectric triangles:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectrTri = valueInt;
+		}
+		words = "Number of aperture triangles:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureTri = valueInt;
+		}
+		words = "GO tr";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumGoTri = valueInt;
+		}
+		words = "windscreen tr";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWindscreenTri = valueInt;
+		}
+		words = "Number of FEM surface triangles:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFemSurfaceTri = valueInt;
+		}
+		words = "Number of modal port triangles:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumModalPortTri = valueInt;
+		}
+		words = "Number of metallic segments:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicSegms = valueInt;
+		}
+		words = "dielectr./magnet. cuboids:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDieMagnCubs = valueInt;
+		}
+		words = "tetrahedra";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumTetrahedra = valueInt;
+		}
+		words = "Number of edges in PO region:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesPORegion = valueInt;
+		}
+		words = "Number of wedges in PO region:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWedgesPORegion = valueInt;
+		}
+		words = "Number of Fock regions:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFockRegions = valueInt;
+		}
+		words = "Number of polygonal surfaces:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumPolySurfaces = valueInt;
+		}
+		words = "Number of UTD cylinders:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumUTDCylindres = valueInt;
+		}
+		words = "Number of metallic edges (MoM):";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesMoM = valueInt;
+		}
+		words = "Number of metallic edges (PO):";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesPO = valueInt;
+		}
+		words = "Number of dielectric edges (MoM):";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesMoM = valueInt;
+		}
+		words = "Number of dielectric edges (PO):";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesPO = valueInt;
+		}
+		words = "Number of aperture edges (MoM):";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureEdgesMoM = valueInt;
+		}
+		words = "Number of edges FEM/MoM surface:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesFEMMomSurf = valueInt;
+		}
+		words = "Number of nodes between segments:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumNodesBetweenSegms = valueInt;
+		}
+		words = "Number of connection points:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumConnectionPoints = valueInt;
+		}
+		words = "Number of dielectric cuboids:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricCuboids = valueInt;
+		}
+		words = "Number of magnetic cuboids:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMagneticCuboids = valueInt;
+		}
+		words = "Number of basis funct. for MoM:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctMoM = valueInt;
+		}
+		words = "Number of basis funct. for PO:";
+		while (vsOut[cs].find(words) == string::npos) { cs++; }
+		{
+			stringstream ss(vsOut[cs]);
+			getline(ss, token, ':');
+			getline(ss, token, ':');
+			valueInt = stoi(token);
+			_antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctPO = valueInt;
+		}
+	}
+	while (cs < vsOut.size())
+	{
+		bool stop = false;
+		DATA_FOR_ONE_FREQ NEW_DATA_FOR_ONE_FREQ;
+		if (_antenna.outputPar.findDATA_FOR_DIELECTRIC_MEDIA)
+		{
+			words = "DATA FOR DIELECTRIC MEDIA";
+			while (vsOut[cs].find(words) == string::npos)
+			{
+				cs++;
+				if (cs == vsOut.size()) { stop = true;  break; }
+			}
+			if (stop) { break; }
+
+			cs++;
+			cs++;
+			cs++;
+			while (vsOut[cs].size() > 2 && vsOut[cs].find("EXCITATION") == string::npos)
+			{
+				DATA_FOR_DIELECTRIC_MEDIA NEW_DATA_FOR_DIELECTRIC_MEDIA;
+				stringstream ss(vsOut[cs]);
+				ss >> NEW_DATA_FOR_DIELECTRIC_MEDIA.InternalIndex
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermittivity
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermeability
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.Conductivity
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaElectric
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaMagnetic
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.MassDensity;
+				NEW_DATA_FOR_ONE_FREQ._VEC_DATA_FOR_DIELECTRIC_MEDIA.push_back(NEW_DATA_FOR_DIELECTRIC_MEDIA);
+				cs++;
+			}
+		}
+
+		if (_antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE)
+		{
+			while (true)
+			{
+				EXCITATION_BY_VOLTAGE_SOURCE NEW_EXCITATION_BY_VOLTAGE_SOURCE;
+				words = "EXCITATION BY VOLTAGE SOURCE AT";
 				while (vsOut[cs].find(words) == string::npos)
 				{
-					if (cs < vsOut.size()) { cs++; }
-					else			       { stop = true;  break; }
+					cs++;
+					if (cs == vsOut.size()) { stop = true;  break; }
 				}
 				if (stop) { break; }
-
-				cs++;
-				cs++;
-				cs++;
-				cs++;
-				while (vsOut[cs].size() > 2)
+				words = "N =";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
 				{
-					DATA_FOR_DIELECTRIC_MEDIA NEW_DATA_FOR_DIELECTRIC_MEDIA;
 					stringstream ss(vsOut[cs]);
-					ss >> NEW_DATA_FOR_DIELECTRIC_MEDIA.InternalIndex
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermittivity
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermeability
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.Conductivity
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaElectric
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaMagnetic
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.MassDensity;
-					NEW_DATA_FOR_ONE_FREQ._VEC_DATA_FOR_DIELECTRIC_MEDIA.push_back(NEW_DATA_FOR_DIELECTRIC_MEDIA);
-					cs++;
+					getline(ss, token, '=');
+					getline(ss, token, '=');
+					valueInt = stoi(token);
+					NEW_EXCITATION_BY_VOLTAGE_SOURCE.ExcitationIndex = valueInt;
 				}
-			}
-
-			if (_antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE)
-			{
-				while (true)
+				words = "Frequency in Hz:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
 				{
-					EXCITATION_BY_VOLTAGE_SOURCE NEW_EXCITATION_BY_VOLTAGE_SOURCE;
-					words = "EXCITATION BY VOLTAGE SOURCE AT";
-					while (vsOut[cs].find(words) == string::npos)
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, '=');
+					getline(ss, token, '=');
+					valueDouble = stod(token);
+					NEW_EXCITATION_BY_VOLTAGE_SOURCE.Frequency = valueDouble;
+				}
+				words = "Wavelength in m:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, '=');
+					getline(ss, token, '=');
+					valueDouble = stod(token);
+					NEW_EXCITATION_BY_VOLTAGE_SOURCE.Wavelength = valueDouble;
+				}
+				words = "Open circuit voltage in V:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, '=');
+					getline(ss, token, '=');
+					valueDouble = stod(token);
+					NEW_EXCITATION_BY_VOLTAGE_SOURCE.OpenCircuitVoltage = valueDouble;
+				}
+				words = "Phase in deg.:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, '=');
+					getline(ss, token, '=');
+					valueDouble = stod(token);
+					NEW_EXCITATION_BY_VOLTAGE_SOURCE.Phase = valueDouble;
+				}
+				if (_antenna.type == PLANE)
+				{
+					words = "Electrical edge length in m:";
+					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
-						if (!(file.eof())) { cs++; }
-						else			   { stop = true;  break; }
+						stringstream ss(vsOut[cs]);
+						getline(ss, token, '=');
+						getline(ss, token, '=');
+						valueDouble = stod(token);
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.ElectricalEdgeLength = valueDouble;
 					}
-					if (stop) { break; }
-					words = "N =";
+				}
+				if (_antenna.type == STRIPE || _antenna.type == WIRE)
+				{
+					words = "ULA";
 					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
 						stringstream ss(vsOut[cs]);
 						getline(ss, token, '=');
 						getline(ss, token, '=');
 						valueInt = stoi(token);
-						NEW_EXCITATION_BY_VOLTAGE_SOURCE.ExcitationIndex = valueInt;
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.SourceSegmLabel = valueInt;
 					}
-					words = "Frequency in Hz:";
+					words = "UNR";
+					while (vsOut[cs].find(words) == string::npos) { cs++; }
+					{
+						stringstream ss(vsOut[cs]);
+						getline(ss, token, '=');
+						getline(ss, token, '=');
+						valueInt = stoi(token);
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.AbsolNumSegms = valueInt;
+					}
+					words = "Location of the excit. in m:";
 					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
 						stringstream ss(vsOut[cs]);
 						getline(ss, token, '=');
 						getline(ss, token, '=');
 						valueDouble = stod(token);
-						NEW_EXCITATION_BY_VOLTAGE_SOURCE.Frequency = valueDouble;
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitX = valueDouble;
 					}
-					words = "Wavelength in m:";
+					words = "Y";
 					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
 						stringstream ss(vsOut[cs]);
 						getline(ss, token, '=');
 						getline(ss, token, '=');
 						valueDouble = stod(token);
-						NEW_EXCITATION_BY_VOLTAGE_SOURCE.Wavelength = valueDouble;
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitY = valueDouble;
 					}
-					words = "Open circuit voltage in V:";
+					words = "Z";
 					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
 						stringstream ss(vsOut[cs]);
 						getline(ss, token, '=');
 						getline(ss, token, '=');
 						valueDouble = stod(token);
-						NEW_EXCITATION_BY_VOLTAGE_SOURCE.OpenCircuitVoltage = valueDouble;
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitZ = valueDouble;
 					}
-					words = "Phase in deg.:";
+					words = "Positive feed direction:";
 					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
 						stringstream ss(vsOut[cs]);
 						getline(ss, token, '=');
 						getline(ss, token, '=');
 						valueDouble = stod(token);
-						NEW_EXCITATION_BY_VOLTAGE_SOURCE.Phase = valueDouble;
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirX = valueDouble;
 					}
-					if (_antenna.type == PLANE)
+					words = "Y";
+					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
-						words = "Electrical edge length in m:";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.ElectricalEdgeLength = valueDouble;
-						}
+						stringstream ss(vsOut[cs]);
+						getline(ss, token, '=');
+						getline(ss, token, '=');
+						valueDouble = stod(token);
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirY = valueDouble;
 					}
-					if (_antenna.type == STRIPE || _antenna.type == WIRE)
+					words = "Z";
+					while (vsOut[cs].find(words) == string::npos) { cs++; }
 					{
-						words = "ULA";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueInt = stoi(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.SourceSegmLabel = valueInt;
-						}
-						words = "UNR";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueInt = stoi(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.AbsolNumSegms = valueInt;
-						}
-						words = "Location of the excit. in m:";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitX = valueDouble;
-						}
-						words = "Y";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitY = valueDouble;
-						}
-						words = "Z";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitZ = valueDouble;
-						}
-						words = "Positive feed direction:";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirX = valueDouble;
-						}
-						words = "Y";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirY = valueDouble;
-						}
-						words = "Z";
-						while (vsOut[cs].find(words) == string::npos) { cs++; }
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, '=');
-							getline(ss, token, '=');
-							valueDouble = stod(token);
-							NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirZ = valueDouble;
-						}
+						stringstream ss(vsOut[cs]);
+						getline(ss, token, '=');
+						getline(ss, token, '=');
+						valueDouble = stod(token);
+						NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirZ = valueDouble;
 					}
-					NEW_DATA_FOR_ONE_FREQ._VEC_EXCITATION_BY_VOLTAGE_SOURCE.push_back(NEW_EXCITATION_BY_VOLTAGE_SOURCE);
-
-					while (vsOut[cs].find("BY VOLTAGE SOURCE") == string::npos && vsOut[cs].find("GREEN") == string::npos && vsOut[cs].find("MATRIX") == string::npos) { cs++; }
-					if (vsOut[cs].find("GREEN") != string::npos || vsOut[cs].find("MATRIX") != string::npos) { break; }
 				}
+				NEW_DATA_FOR_ONE_FREQ._VEC_EXCITATION_BY_VOLTAGE_SOURCE.push_back(NEW_EXCITATION_BY_VOLTAGE_SOURCE);
+
+				while (vsOut[cs].find("BY VOLTAGE SOURCE") == string::npos && vsOut[cs].find("GREEN") == string::npos && vsOut[cs].find("MATRIX") == string::npos) { cs++; }
+				if (vsOut[cs].find("GREEN") != string::npos || vsOut[cs].find("MATRIX") != string::npos) { break; }
 			}
-
-			if (_antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS)
-			{
-				//double dx,dy,dz;
-				words = "Data for the individual layers";
-				while (vsOut[cs].find(words) == string::npos)
-				{
-					if (!(file.eof())) { cs++; }
-					else			   { stop = true;  break; }
-				}
-				if (stop) { break; }
-
-				cs++;
-				cs++;
-				cs++;
-				cs++;
-				while (vsOut[cs].size() > 2)
-				{
-					DATA_FOR_DIELECTRIC_MEDIA NEW_DATA_FOR_DIELECTRIC_MEDIA;
-					stringstream ss(vsOut[cs]);
-					ss >> NEW_DATA_FOR_DIELECTRIC_MEDIA.InternalIndex;
-					vsOut[cs].erase(0, 44);
-					stringstream ss1(vsOut[cs]);
-					ss1 >> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermittivity
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermeability
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.Conductivity
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaElectric
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaMagnetic
-						>> NEW_DATA_FOR_DIELECTRIC_MEDIA.MassDensity;
-					NEW_DATA_FOR_ONE_FREQ._VEC_DATA_FOR_DIELECTRIC_MEDIA.push_back(NEW_DATA_FOR_DIELECTRIC_MEDIA);
-					cs++;
-				}
-			}
-
-			// 			if (_antenna.outputPar.findDISTRIBUTED_STORAGE_OF_MATRIX)
-			// 			{
-			// 				if (_antenna.type == STRIPE)
-			// 				{
-			// 					words = "STORAGE";
-			// 					while (vsOut[cs].find(words) == string::npos) 
-			// 					{
-			// 						if (!(file.eof())) {cs++;}
-			// 						else			   {stop = true;  break;}
-			// 					}
-			// 					if (stop) {break;}
-			// 					words = "Number of rows of the matrix";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumRowsMatrix = valueInt;
-			// 					}
-			// 					words = "Number of columns of the matrix";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumColsMatrix = valueInt;
-			// 					}
-			// 					words = "Number of rows of the process grid";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumRowsProcessGrid = valueInt;
-			// 					}
-			// 					words = "Number of columns of the process grid";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumColsProcessGrid = valueInt;
-			// 					}
-			// 					words = "Block size";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.BlockSize = valueInt;
-			// 					}
-			// 					words = "Theoretical load in percent";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueDouble = stod(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.TheoreticalLoadPercent = valueDouble;
-			// 					}
-			// 					words = "Number of rows of local matrix";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumRowsLocalMatrix = valueInt;
-			// 					}
-			// 					words = "Number of columns of local mat";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumColsLocalMatrix = valueInt;
-			// 					}
-			// 					words = "Local memory requirement for matrix";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.LocalMemoryReqMatrix = valueInt;
-			// 					}
-			// 					words = "Memory requirement for MoM matrix:";
-			// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 					{
-			// 						stringstream ss(vsOut[cs]);
-			// 						getline(ss, token, '=');
-			// 						getline(ss, token, '=');
-			// 						valueInt = stoi(token);
-			// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.MemoryReqMoMMatrix = valueInt;
-			// 					}
-			// 				}
-			// 				words = "CPU time for preconditioning:";
-			// 				while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 				{
-			// 					stringstream ss(vsOut[cs]);
-			// 					getline(ss, token, ':');
-			// 					getline(ss, token, ':');
-			// 					valueDouble = stod(token);
-			// 					NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.CPUTimePreconditioning = valueDouble;
-			// 				}
-			// 				words = "Condition number of the matrix:";
-			// 				while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 				{
-			// 					stringstream ss(vsOut[cs]);
-			// 					getline(ss, token, ':');
-			// 					getline(ss, token, ':');
-			// 					valueDouble = stod(token);
-			// 					NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.ConditionNumMatrix = valueDouble;
-			// 				}
-			// 				words = "CPU time for solving the linear set of equations:";
-			// 				while (vsOut[cs].find(words) == string::npos) {cs++;}
-			// 				{
-			// 					stringstream ss(vsOut[cs]);
-			// 					getline(ss, token, ':');
-			// 					getline(ss, token, ':');
-			// 					valueDouble = stod(token);
-			// 					NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.CPUTimeSolvLinearEquations = valueDouble;
-			// 				}
-			// 			}
-
-			if (_antenna.outputPar.findDATA_OF_THE_VOLTAGE_SOURCE)
-			{
-				while (true)
-				{
-					DATA_OF_THE_VOLTAGE_SOURCE NEW_DATA_OF_THE_VOLTAGE_SOURCE;
-
-					words = "DATA OF THE VOLTAGE SOURCE";
-					while (vsOut[cs].find(words) == string::npos)
-					{
-						if (!(file.eof())) { cs++; }
-						else			   { stop = true;  break; }
-					}
-					if (stop) { break; }
-					words = "Current";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, 'A');
-						getline(ss, token, 'A');
-						stringstream ss1(token);
-						ss1 >> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentRealPart
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentImagPart
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentMagnitude
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentPhase;
-					}
-					words = "Admitt";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, 'V');
-						getline(ss, token, 'V');
-						stringstream ss1(token);
-						ss1 >> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittRealPart
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittImagPart
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittMagnitude
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittPhase;
-					}
-					words = "Impedance";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, 'm');
-						getline(ss, token, 'm');
-						getline(ss, token, 'm');
-						stringstream ss1(token);
-						ss1 >> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceRealPart
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceImagPart
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceMagnitude
-							>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedancePhase;
-					}
-					while (vsOut[cs].find("Inductance") == string::npos && vsOut[cs].find("Capacitance") == string::npos) { cs++; }
-					{
-						if (vsOut[cs].find("Inductance") != string::npos)
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, 'H');
-							getline(ss, token, 'H');
-							valueDouble = stod(token);
-							NEW_DATA_OF_THE_VOLTAGE_SOURCE.Inductance = valueDouble;
-							NEW_DATA_OF_THE_VOLTAGE_SOURCE.Capacitance = 0;
-						}
-						if (vsOut[cs].find("Capacitance") != string::npos)
-						{
-							stringstream ss(vsOut[cs]);
-							getline(ss, token, 'F');
-							getline(ss, token, 'F');
-							valueDouble = stod(token);
-							NEW_DATA_OF_THE_VOLTAGE_SOURCE.Inductance = 0;
-							NEW_DATA_OF_THE_VOLTAGE_SOURCE.Capacitance = valueDouble;
-						}
-					}
-					words = "Power in Watt:";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_OF_THE_VOLTAGE_SOURCE.Power = valueDouble;
-					}
-					NEW_DATA_FOR_ONE_FREQ._VEC_DATA_OF_THE_VOLTAGE_SOURCE.push_back(NEW_DATA_OF_THE_VOLTAGE_SOURCE);
-					while (vsOut[cs].find("DATA OF THE VOLTAGE SOURCE") == string::npos && vsOut[cs].find("SCATTERING PARAMETERS") == string::npos && vsOut[cs].find("LOSSES") == string::npos) { cs++; }
-					if (vsOut[cs].find("SCATTERING PARAMETERS") != string::npos || vsOut[cs].find("LOSSES") != string::npos) { break; }
-				}
-			}
-
-			if (_antenna.outputPar.findSCATTERING_PARAMETERS)
-			{
-				words = "SCATTERING PARAMETERS";
-				while (vsOut[cs].find(words) == string::npos)
-				{
-					if (!(file.eof())) { cs++; }
-					else			   { stop = true;  break; }
-				}
-				if (stop) { break; }
-				{
-					cs++;
-					cs++;
-					cs++;
-					cs++;
-					string _s;
-					stringstream ss(vsOut[cs]);
-					ss >> _s
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SPortSinc
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SPortSource
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SRealPart
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SImagPart
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SMagnitudeLinear
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SMagnitudeDB
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SPhase;
-				}
-				words = "Sum |S|^2 of these S-parameters:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					stringstream ss1(token);
-					ss1 >> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SumS2MagnitudeLinear
-						>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SumS2MagnitudeDB;
-				}
-
-				NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.S11 = sqrt(NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SRealPart*NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SRealPart +
-					NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SImagPart*NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SImagPart);
-
-				NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.VSWR = (1 + abs(NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.S11)) /
-					(1 - abs(NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.S11));
-			}
-
-			if (_antenna.outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS)
-			{
-				if (_antenna.type == STRIPE)
-				{
-					words = "LOSSES IN DIELECTRIC VOLUME ELEMENTS";
-					while (vsOut[cs].find(words) == string::npos)
-					{
-						if (!(file.eof())) { cs++; }
-						else			   { stop = true;  break; }
-					}
-					if (stop) { break; }
-					words = "Power loss in Watt:";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.PowerLoss = valueDouble;
-					}
-					words = "Maximum SAR value in Watt";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.MaximumSARValue = valueDouble;
-					}
-					words = "Averaged SAR value in Watt";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.AveragedSARValue = valueDouble;
-					}
-				}
-			}
-
-			if (_antenna.outputPar.findSUMMARY_OF_LOSSES)
-			{
-				words = "SUMMARY OF LOSSES";
-				while (vsOut[cs].find(words) == string::npos)
-				{
-					if (!(file.eof())) { cs++; }
-					else			   { stop = true;  break; }
-				}
-				if (stop) { break; }
-				words = "Metallic elements:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.MetallicElements = valueDouble;
-				}
-				words = "Mismatch at feed:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.MismatchFeed = valueDouble;
-				}
-				words = "Non-radiating networks:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.NonRadiatingNetworks = valueDouble;
-				}
-				words = "Backward power at passive waveguide ports:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.BackPowerPassWaveguidePorts = valueDouble;
-				}
-				words = "Backward power at passive modal ports:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.BackPowerPassModalPorts = valueDouble;
-				}
-				words = "Sum of all losses:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.SumAllLosses = valueDouble;
-				}
-				words = "Efficiency of the antenna:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.EfficiencyTheAntenna = valueDouble;
-				}
-				words = "based on a total active power:";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, ':');
-					getline(ss, token, ':');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.BasedTotalActivePower = valueDouble;
-				}
-			}
-
-			if (_antenna.outputPar.findDIRECTIVITY_PATTERN_THETA_PHI)
-			{
-				words = "SCATTERED ELECTRIC FIELD STRENGTH";
-				while (vsOut[cs].find(words) == string::npos)
-				{
-					if (!(file.eof())) { cs++; }
-					else			   { stop = true;  break; }
-				}
-				if (stop) { break; }
-				cs++;
-				cs++;
-				cs++;
-				cs++;
-				cs++;
-				while (vsOut[cs].size() > 2)
-				{
-					DIRECTIVITY_PATTERN_THETA_PHI NEW_DIRECTIVITY_PATTERN_THETA_PHI;
-					stringstream ss(vsOut[cs]);
-					ss >> NEW_DIRECTIVITY_PATTERN_THETA_PHI.Tetta
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.Phi
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaMagn
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaPhase
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiMagn
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiPhase
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.DirectivityVert
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.DirectivityHoriz
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.DirectivityTotal
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.PolarizationAxial
-						>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.PolarizationAngle;
-					NEW_DIRECTIVITY_PATTERN_THETA_PHI.Gain = sqrt(NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaMagn * NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaMagn +
-						NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiMagn   * NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiMagn);
-					if (NEW_DIRECTIVITY_PATTERN_THETA_PHI.Gain > NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.EMAX)
-					{
-						NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.EMAX = NEW_DIRECTIVITY_PATTERN_THETA_PHI.Gain;
-					}
-
-					NEW_DATA_FOR_ONE_FREQ._VEC_DIRECTIVITY_PATTERN_THETA_PHI.push_back(NEW_DIRECTIVITY_PATTERN_THETA_PHI);
-					cs++;
-				}
-			}
-
-			if (_antenna.outputPar.findDIRECTIVITY_PATTERN_PARAMS)
-			{
-				words = "directivity/gain";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, 'f');
-					getline(ss, token, 'f');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.GainPower = valueDouble;
-				}
-				words = "power loss";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, 'f');
-					getline(ss, token, 'f');
-					valueDouble = stod(token);
-					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss = valueDouble;
-				}
-
-				if (_antenna.type == WIRE)
-				{
-					words = "grid DTHETA";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, '=');
-						getline(ss, token, '=');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.DTheta = valueDouble;
-						getline(ss, token, '=');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.DPhi = valueDouble;
-					}
-					words = "horizontal polarisation:";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarHorizWatt = valueDouble;
-						stringstream ss1(vsOut[cs]);
-						getline(ss1, token, '(');
-						getline(ss1, token, '(');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarHorizPers = valueDouble;
-					}
-					words = "vertical polarisation:";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarVertWatt = valueDouble;
-						stringstream ss1(vsOut[cs]);
-						getline(ss1, token, '(');
-						getline(ss1, token, '(');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarVertPers = valueDouble;
-					}
-					words = "S polarisation:";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarSWatt = valueDouble;
-						stringstream ss1(vsOut[cs]);
-						getline(ss1, token, '(');
-						getline(ss1, token, '(');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarSPers = valueDouble;
-					}
-					words = "Z polarisation:";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarZWatt = valueDouble;
-						stringstream ss1(vsOut[cs]);
-						getline(ss1, token, '(');
-						getline(ss1, token, '(');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarZPers = valueDouble;
-					}
-					words = "left hand circular pol";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandWatt = valueDouble;
-						stringstream ss1(vsOut[cs]);
-						getline(ss1, token, '(');
-						getline(ss1, token, '(');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandPers = valueDouble;
-					}
-					words = "right hand circular pol";
-					while (vsOut[cs].find(words) == string::npos) { cs++; }
-					{
-						stringstream ss(vsOut[cs]);
-						getline(ss, token, ':');
-						getline(ss, token, ':');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandWatt = valueDouble;
-						stringstream ss1(vsOut[cs]);
-						getline(ss1, token, '(');
-						getline(ss1, token, '(');
-						valueDouble = stod(token);
-						NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandPers = valueDouble;
-					}
-				}
-			}
-
-			_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ.push_back(NEW_DATA_FOR_ONE_FREQ);
 		}
+
+		if (_antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS)
+		{
+			//double dx,dy,dz;
+			words = "Data for the individual layers";
+			while (vsOut[cs].find(words) == string::npos)
+			{
+				cs++;
+				if (cs == vsOut.size()) { stop = true;  break; }
+			}
+			if (stop) { break; }
+
+			cs++;
+			cs++;
+			cs++;
+			while (vsOut[cs].size() > 2)
+			{
+				DATA_FOR_DIELECTRIC_MEDIA NEW_DATA_FOR_DIELECTRIC_MEDIA;
+				stringstream ss(vsOut[cs]);
+				ss >> NEW_DATA_FOR_DIELECTRIC_MEDIA.InternalIndex;
+				vsOut[cs].erase(0, 44);
+				stringstream ss1(vsOut[cs]);
+				ss1 >> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermittivity
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.RelPermeability
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.Conductivity
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaElectric
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.TanDeltaMagnetic
+					>> NEW_DATA_FOR_DIELECTRIC_MEDIA.MassDensity;
+				NEW_DATA_FOR_ONE_FREQ._VEC_DATA_FOR_DIELECTRIC_MEDIA.push_back(NEW_DATA_FOR_DIELECTRIC_MEDIA);
+				cs++;
+			}
+		}
+
+		// 			if (_antenna.outputPar.findDISTRIBUTED_STORAGE_OF_MATRIX)
+		// 			{
+		// 				if (_antenna.type == STRIPE)
+		// 				{
+		// 					words = "STORAGE";
+		// 					while (vsOut[cs].find(words) == string::npos) 
+		// 					{
+		//						cs++;
+		//						if (cs == vsOut.size()) { stop = true;  break; }
+		// 					}
+		// 					if (stop) {break;}
+		// 					words = "Number of rows of the matrix";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumRowsMatrix = valueInt;
+		// 					}
+		// 					words = "Number of columns of the matrix";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumColsMatrix = valueInt;
+		// 					}
+		// 					words = "Number of rows of the process grid";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumRowsProcessGrid = valueInt;
+		// 					}
+		// 					words = "Number of columns of the process grid";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumColsProcessGrid = valueInt;
+		// 					}
+		// 					words = "Block size";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.BlockSize = valueInt;
+		// 					}
+		// 					words = "Theoretical load in percent";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueDouble = stod(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.TheoreticalLoadPercent = valueDouble;
+		// 					}
+		// 					words = "Number of rows of local matrix";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumRowsLocalMatrix = valueInt;
+		// 					}
+		// 					words = "Number of columns of local mat";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.NumColsLocalMatrix = valueInt;
+		// 					}
+		// 					words = "Local memory requirement for matrix";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.LocalMemoryReqMatrix = valueInt;
+		// 					}
+		// 					words = "Memory requirement for MoM matrix:";
+		// 					while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 					{
+		// 						stringstream ss(vsOut[cs]);
+		// 						getline(ss, token, '=');
+		// 						getline(ss, token, '=');
+		// 						valueInt = stoi(token);
+		// 						NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.MemoryReqMoMMatrix = valueInt;
+		// 					}
+		// 				}
+		// 				words = "CPU time for preconditioning:";
+		// 				while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 				{
+		// 					stringstream ss(vsOut[cs]);
+		// 					getline(ss, token, ':');
+		// 					getline(ss, token, ':');
+		// 					valueDouble = stod(token);
+		// 					NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.CPUTimePreconditioning = valueDouble;
+		// 				}
+		// 				words = "Condition number of the matrix:";
+		// 				while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 				{
+		// 					stringstream ss(vsOut[cs]);
+		// 					getline(ss, token, ':');
+		// 					getline(ss, token, ':');
+		// 					valueDouble = stod(token);
+		// 					NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.ConditionNumMatrix = valueDouble;
+		// 				}
+		// 				words = "CPU time for solving the linear set of equations:";
+		// 				while (vsOut[cs].find(words) == string::npos) {cs++;}
+		// 				{
+		// 					stringstream ss(vsOut[cs]);
+		// 					getline(ss, token, ':');
+		// 					getline(ss, token, ':');
+		// 					valueDouble = stod(token);
+		// 					NEW_DATA_FOR_ONE_FREQ._DISTRIBUTED_STORAGE_OF_MATRIX.CPUTimeSolvLinearEquations = valueDouble;
+		// 				}
+		// 			}
+
+		if (_antenna.outputPar.findDATA_OF_THE_VOLTAGE_SOURCE)
+		{
+			while (true)
+			{
+				DATA_OF_THE_VOLTAGE_SOURCE NEW_DATA_OF_THE_VOLTAGE_SOURCE;
+
+				words = "DATA OF THE VOLTAGE SOURCE";
+				while (vsOut[cs].find(words) == string::npos)
+				{
+					cs++;
+					if (cs == vsOut.size()) { stop = true;  break; }
+				}
+				if (stop) { break; }
+				words = "Current";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, 'A');
+					getline(ss, token, 'A');
+					stringstream ss1(token);
+					ss1 >> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentRealPart
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentImagPart
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentMagnitude
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.CurrentPhase;
+				}
+				words = "Admitt";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, 'V');
+					getline(ss, token, 'V');
+					stringstream ss1(token);
+					ss1 >> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittRealPart
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittImagPart
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittMagnitude
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.AdmittPhase;
+				}
+				words = "Impedance";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, 'm');
+					getline(ss, token, 'm');
+					getline(ss, token, 'm');
+					stringstream ss1(token);
+					ss1 >> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceRealPart
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceImagPart
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceMagnitude
+						>> NEW_DATA_OF_THE_VOLTAGE_SOURCE.ImpedancePhase;
+				}
+				while (vsOut[cs].find("Inductance") == string::npos && vsOut[cs].find("Capacitance") == string::npos) { cs++; }
+				{
+					if (vsOut[cs].find("Inductance") != string::npos)
+					{
+						stringstream ss(vsOut[cs]);
+						getline(ss, token, 'H');
+						getline(ss, token, 'H');
+						valueDouble = stod(token);
+						NEW_DATA_OF_THE_VOLTAGE_SOURCE.Inductance = valueDouble;
+						NEW_DATA_OF_THE_VOLTAGE_SOURCE.Capacitance = 0;
+					}
+					if (vsOut[cs].find("Capacitance") != string::npos)
+					{
+						stringstream ss(vsOut[cs]);
+						getline(ss, token, 'F');
+						getline(ss, token, 'F');
+						valueDouble = stod(token);
+						NEW_DATA_OF_THE_VOLTAGE_SOURCE.Inductance = 0;
+						NEW_DATA_OF_THE_VOLTAGE_SOURCE.Capacitance = valueDouble;
+					}
+				}
+				words = "Power in Watt:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_OF_THE_VOLTAGE_SOURCE.Power = valueDouble;
+				}
+				NEW_DATA_FOR_ONE_FREQ._VEC_DATA_OF_THE_VOLTAGE_SOURCE.push_back(NEW_DATA_OF_THE_VOLTAGE_SOURCE);
+				while (vsOut[cs].find("DATA OF THE VOLTAGE SOURCE") == string::npos && vsOut[cs].find("SCATTERING PARAMETERS") == string::npos && vsOut[cs].find("LOSSES") == string::npos) { cs++; }
+				if (vsOut[cs].find("SCATTERING PARAMETERS") != string::npos || vsOut[cs].find("LOSSES") != string::npos) { break; }
+			}
+		}
+
+		if (_antenna.outputPar.findSCATTERING_PARAMETERS)
+		{
+			words = "SCATTERING PARAMETERS";
+			while (vsOut[cs].find(words) == string::npos)
+			{
+				cs++;
+				if (cs == vsOut.size()) { stop = true;  break; }
+			}
+			if (stop) { break; }
+			{
+				cs++;
+				cs++;
+				cs++;
+				string _s;
+				stringstream ss(vsOut[cs]);
+				ss >> _s
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SPortSinc
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SPortSource
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SRealPart
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SImagPart
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SMagnitudeLinear
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SMagnitudeDB
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SPhase;
+			}
+			words = "Sum |S|^2 of these S-parameters:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				stringstream ss1(token);
+				ss1 >> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SumS2MagnitudeLinear
+					>> NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SumS2MagnitudeDB;
+			}
+
+			NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.S11 = sqrt(NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SRealPart*NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SRealPart +
+				NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SImagPart*NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.SImagPart);
+
+			NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.VSWR = (1 + abs(NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.S11)) /
+				(1 - abs(NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.S11));
+		}
+
+		if (_antenna.outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS)
+		{
+			if (_antenna.type == STRIPE)
+			{
+				words = "LOSSES IN DIELECTRIC VOLUME ELEMENTS";
+				while (vsOut[cs].find(words) == string::npos)
+				{
+					cs++;
+					if (cs == vsOut.size()) { stop = true;  break; }
+				}
+				if (stop) { break; }
+				words = "Power loss in Watt:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.PowerLoss = valueDouble;
+				}
+				words = "Maximum SAR value in Watt";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.MaximumSARValue = valueDouble;
+				}
+				words = "Averaged SAR value in Watt";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.AveragedSARValue = valueDouble;
+				}
+			}
+		}
+
+		if (_antenna.outputPar.findSUMMARY_OF_LOSSES)
+		{
+			words = "SUMMARY OF LOSSES";
+			while (vsOut[cs].find(words) == string::npos)
+			{
+				cs++;
+				if (cs == vsOut.size()) { stop = true;  break; }
+			}
+			if (stop) { break; }
+			words = "Metallic elements:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.MetallicElements = valueDouble;
+			}
+			words = "Mismatch at feed:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.MismatchFeed = valueDouble;
+			}
+			words = "Non-radiating networks:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.NonRadiatingNetworks = valueDouble;
+			}
+			words = "Backward power at passive waveguide ports:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.BackPowerPassWaveguidePorts = valueDouble;
+			}
+			words = "Backward power at passive modal ports:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.BackPowerPassModalPorts = valueDouble;
+			}
+			words = "Sum of all losses:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.SumAllLosses = valueDouble;
+			}
+			words = "Efficiency of the antenna:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.EfficiencyTheAntenna = valueDouble;
+			}
+			words = "based on a total active power:";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, ':');
+				getline(ss, token, ':');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._SUMMARY_OF_LOSSES.BasedTotalActivePower = valueDouble;
+			}
+		}
+
+		if (_antenna.outputPar.findDIRECTIVITY_PATTERN_THETA_PHI)
+		{
+			words = "SCATTERED ELECTRIC FIELD STRENGTH";
+			while (vsOut[cs].find(words) == string::npos)
+			{
+				cs++;
+				if (cs == vsOut.size()) { stop = true;  break; }
+			}
+			if (stop) { break; }
+			cs++;
+			cs++;
+			cs++;
+			cs++;
+			while (vsOut[cs].size() > 2 && vsOut[cs].find("Gain") == string::npos)
+			{
+				DIRECTIVITY_PATTERN_THETA_PHI NEW_DIRECTIVITY_PATTERN_THETA_PHI;
+				stringstream ss(vsOut[cs]);
+				ss >> NEW_DIRECTIVITY_PATTERN_THETA_PHI.Tetta
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.Phi
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaMagn
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaPhase
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiMagn
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiPhase
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.DirectivityVert
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.DirectivityHoriz
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.DirectivityTotal
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.PolarizationAxial
+					>> NEW_DIRECTIVITY_PATTERN_THETA_PHI.PolarizationAngle;
+				NEW_DIRECTIVITY_PATTERN_THETA_PHI.Gain = sqrt(NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaMagn * NEW_DIRECTIVITY_PATTERN_THETA_PHI.EthetaMagn +
+					NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiMagn   * NEW_DIRECTIVITY_PATTERN_THETA_PHI.EphiMagn);
+				if (NEW_DIRECTIVITY_PATTERN_THETA_PHI.Gain > NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.EMAX)
+				{
+					NEW_DATA_FOR_ONE_FREQ._SCATTERING_PARAMETERS.EMAX = NEW_DIRECTIVITY_PATTERN_THETA_PHI.Gain;
+				}
+
+				NEW_DATA_FOR_ONE_FREQ._VEC_DIRECTIVITY_PATTERN_THETA_PHI.push_back(NEW_DIRECTIVITY_PATTERN_THETA_PHI);
+				cs++;
+			}
+		}
+
+		if (_antenna.outputPar.findDIRECTIVITY_PATTERN_PARAMS)
+		{
+			words = "directivity/gain";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, 'f');
+				getline(ss, token, 'f');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.GainPower = valueDouble;
+			}
+			words = "power loss";
+			while (vsOut[cs].find(words) == string::npos) { cs++; }
+			{
+				stringstream ss(vsOut[cs]);
+				getline(ss, token, 'f');
+				getline(ss, token, 'f');
+				valueDouble = stod(token);
+				NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss = valueDouble;
+			}
+
+			if (_antenna.type == WIRE)
+			{
+				words = "grid DTHETA";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, '=');
+					getline(ss, token, '=');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.DTheta = valueDouble;
+					getline(ss, token, '=');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.DPhi = valueDouble;
+				}
+				words = "horizontal polarisation:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarHorizWatt = valueDouble;
+					stringstream ss1(vsOut[cs]);
+					getline(ss1, token, '(');
+					getline(ss1, token, '(');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarHorizPers = valueDouble;
+				}
+				words = "vertical polarisation:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarVertWatt = valueDouble;
+					stringstream ss1(vsOut[cs]);
+					getline(ss1, token, '(');
+					getline(ss1, token, '(');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarVertPers = valueDouble;
+				}
+				words = "S polarisation:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarSWatt = valueDouble;
+					stringstream ss1(vsOut[cs]);
+					getline(ss1, token, '(');
+					getline(ss1, token, '(');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarSPers = valueDouble;
+				}
+				words = "Z polarisation:";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarZWatt = valueDouble;
+					stringstream ss1(vsOut[cs]);
+					getline(ss1, token, '(');
+					getline(ss1, token, '(');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarZPers = valueDouble;
+				}
+				words = "left hand circular pol";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandWatt = valueDouble;
+					stringstream ss1(vsOut[cs]);
+					getline(ss1, token, '(');
+					getline(ss1, token, '(');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandPers = valueDouble;
+				}
+				words = "right hand circular pol";
+				while (vsOut[cs].find(words) == string::npos) { cs++; }
+				{
+					stringstream ss(vsOut[cs]);
+					getline(ss, token, ':');
+					getline(ss, token, ':');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandWatt = valueDouble;
+					stringstream ss1(vsOut[cs]);
+					getline(ss1, token, '(');
+					getline(ss1, token, '(');
+					valueDouble = stod(token);
+					NEW_DATA_FOR_ONE_FREQ._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandPers = valueDouble;
+				}
+			}
+		}
+
+		_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ.push_back(NEW_DATA_FOR_ONE_FREQ);
 	}
 
 	std::vector<double> vecS11, vecW, vecS11Db;
@@ -1264,7 +1257,6 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 void ParseFekoFile::ParseFilePre(std::string _file, Antenna& _antenna)
 {
 	//setlocale(LC_ALL, "Russian");
-	int nomer = 0;
 	std::string word, token;
 	_antenna.pathPre = _file;
 	std::vector<std::string> vs;
@@ -1281,6 +1273,7 @@ void ParseFekoFile::ParseFilePre(std::string _file, Antenna& _antenna)
 		std::istreambuf_iterator<char>());
 
 	vsPre.clear();
+	vsPre.reserve(100);
 	for (size_t i = 0; i < allFile.size(); ++i)
 	{
 		size_t beginS = i;

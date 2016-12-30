@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#include <ctime> // time_t
+//#include <ctime> // time_t
 
 Core::Core()
 {
@@ -216,9 +216,9 @@ int Core::ReadFiles()
 		QString experiment_name = dir.absolutePath() + QString("/comment.txt");
 		parseFeko.ParseFileComment(experiment_name.toStdString(), *(pExperiment.get()));
 
-		time_t t1, t2;
-		double tpre = 0;
-		double tout = 0;
+		//time_t t1, t2;
+		//double tpre = 0;
+		//double tout = 0;
 		for (int i=0; i<outs.size(); ++i)
 		{
 			Antenna newAntenna;
@@ -229,20 +229,20 @@ int Core::ReadFiles()
 			name = pre_names.at(i).toLocal8Bit();
 			cout << name.toStdString() << endl;
 			file = pres[i];
-			time(&t1);
+			//time(&t1);
 			parseFeko.ParseFilePre(file.toStdString(), antennas[i]);
-			time(&t2);
-			tpre += difftime(t2, t1);
+			//time(&t2);
+			//tpre += difftime(t2, t1);
 
 			if (antennas[i].aborted) continue;
 
 			name = out_names.at(i).toLocal8Bit();
 			cout << name.toStdString() << endl;
 			file = outs[i];
-			time (&t1);
+			//time (&t1);
 			parseFeko.ParseFileOut(file.toStdString(), antennas[i]);
-			time (&t2);
-			tout += difftime(t2, t1);
+			//time (&t2);
+			//tout += difftime(t2, t1);
 
 			if (antennas[i].aborted) 
 			{
@@ -251,8 +251,8 @@ int Core::ReadFiles()
 			}
 		}
 
-		cout << tpre << endl;
-		cout << tout << endl;
+		//cout << tpre << endl;
+		//cout << tout << endl;
 
 		cout << "Reading files is finished" << endl;
 		return 0;

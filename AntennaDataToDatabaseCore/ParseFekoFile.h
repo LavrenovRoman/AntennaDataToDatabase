@@ -14,6 +14,5 @@ public:
 	void ParseFilePre(std::string _file, Antenna& _antenna);
 
 private:
-	TYPE _type;
 	std::vector<std::string> vsOut, vsPre;
 };
