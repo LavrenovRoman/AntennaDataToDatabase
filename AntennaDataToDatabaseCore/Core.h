@@ -41,7 +41,7 @@ private:
 	std::vector<Antenna> antennas;
 	std::shared_ptr<Experiment> pExperiment;
 	bool donorDB;
-	std::string pathDonor, pathRecipient, pathCurrentDB;
+	std::string pathDonor, pathRecipient, pathCurrentDB, filesDirectory;
 
 	void SetPaths(std::string spath);
 };

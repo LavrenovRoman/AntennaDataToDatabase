@@ -1,5 +1,4 @@
 #include <iostream>
-#include <QStringList>
 #include <QDir>
 #include <QSettings>
 #include "Core.h"
@@ -146,9 +145,10 @@ int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
 {
 	if (!strdir.empty())
 	{
-		QString qstrdir = QString::fromLocal8Bit(strdir.c_str());
+		filesDirectory = strdir;
+		QString qstrdir = QString::fromStdString(filesDirectory);
 		QDir dir(qstrdir);
-		cout << "Directory =" << strdir.c_str() << endl;
+		cout << "Directory =" << filesDirectory.c_str() << endl;
 		outs = dir.entryList(QStringList("*.out"));
 		pres = dir.entryList(QStringList("*.pre"));
 		cout << "Find " << outs.size() << " out files" << endl;
@@ -211,10 +211,8 @@ int Core::ReadFiles()
 		ParseFekoFile parseFeko;
 		antennas.clear();
 		
-		QFileInfo filetemp(outs[0]);
-		QDir dir(filetemp.absoluteDir());
-		QString experiment_name = dir.absolutePath() + QString("/comment.txt");
-		parseFeko.ParseFileComment(experiment_name.toStdString(), *(pExperiment.get()));
+		std::string experiment_name = filesDirectory + "\\comment.txt";
+		parseFeko.ParseFileComment(experiment_name, *(pExperiment.get()));
 
 		//time_t t1, t2;
 		//double tpre = 0;
@@ -234,7 +232,11 @@ int Core::ReadFiles()
 			//time(&t2);
 			//tpre += difftime(t2, t1);
 
-			if (antennas[i].aborted) continue;
+			if (antennas[i].aborted)
+			{
+				cout << "File " << name.toStdString() << " is aborted!" << endl;
+				continue;
+			}
 
 			name = out_names.at(i).toLocal8Bit();
 			cout << name.toStdString() << endl;
