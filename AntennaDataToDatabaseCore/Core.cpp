@@ -1,13 +1,11 @@
 #include <iostream>
-#include <QDir>
-#include <QSettings>
-#include "Core.h"
-#include "FrbrdDatabase.h"
-#include "Antenna.h"
-#include "ParseFekoFile.h"
 #include <stdio.h> 
-#include <direct.h>
 #include "Windows.h"
+#include "Antenna.h"
+#include "INIReader.h"
+#include "ParseFekoFile.h"
+#include "FrbrdDatabase.h"
+#include "Core.h"
 
 using namespace std;
 
@@ -15,10 +13,10 @@ using namespace std;
 
 Core::Core()
 {
-	outs.clear();
-	pres.clear();
-	out_names.clear();
-	pre_names.clear();
+	sOuts.clear(); 
+	sPres.clear(); 
+	sOuts_paths.clear();
+	sPres_paths.clear();
 	pFBDataBase = std::make_shared<FrbrdDatabase>();
 	pExperiment = std::make_shared<Experiment>();
 	donorDB = false;
@@ -68,12 +66,9 @@ std::string Core::GetCurrentDir()
 
 void Core::SetPaths(std::string spath)
 {
-	QString qpath = QString::fromStdString(spath);
-	QSettings sett(qpath, QSettings::IniFormat);
-	QString v1 = QString::fromLocal8Bit("Path");
-	pathRecipient = sett.value(v1).toString().toStdString();
-	QString v2 = QString::fromLocal8Bit("PathDonorDB");
-	pathDonor = sett.value(v2).toString().toStdString();
+	INIReader reader(spath);
+	pathRecipient = reader.Get("", "path", "");
+	pathDonor = reader.Get("", "pathdonordb", "");
 }
 
 std::string Core::GetPathRecipient()
@@ -97,6 +92,7 @@ int Core::ConnectDatabase(const char* pathDB)
 	string server, path, login, password;
 	login = "SYSDBA";//sett.value("Login").toString().toStdString();
 	password = "masterkey";//sett.value("Password").toString().toStdString();
+	server = "127.0.0.1";
 	if (pathDB == nullptr)
 	{
 		std::string full_path = GetCurrentDir();
@@ -105,8 +101,6 @@ int Core::ConnectDatabase(const char* pathDB)
 		full_path = full_path + fOptions;
 		
 		cout << "Settings from file - " << full_path << endl;
-		QSettings sett(QString::fromStdString(full_path), QSettings::IniFormat);
-		server = sett.value("Server").toString().toStdString();
 		SetPaths(full_path);
 		if (!donorDB)
 		{
@@ -124,7 +118,6 @@ int Core::ConnectDatabase(const char* pathDB)
 	}
 	else
 	{
-		server = "127.0.0.1";
 		path = pathDB;
 	}
 	
@@ -146,6 +139,63 @@ int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
 	if (!strdir.empty())
 	{
 		filesDirectory = strdir;
+
+		std::string sout = strdir + "\\*.out";
+		std::string spre = strdir + "\\*.pre";
+		sOuts.clear();
+		sPres.clear();
+		WIN32_FIND_DATA fileData;
+		HANDLE hFind;
+		if (!((hFind = FindFirstFile(sout.c_str(), &fileData)) == INVALID_HANDLE_VALUE)) {
+			do sOuts.push_back(fileData.cFileName);
+			while (FindNextFile(hFind, &fileData));
+		}
+		FindClose(hFind);
+		if (!((hFind = FindFirstFile(spre.c_str(), &fileData)) == INVALID_HANDLE_VALUE)) {
+			do sPres.push_back(fileData.cFileName);
+			while (FindNextFile(hFind, &fileData));
+		}
+		FindClose(hFind);
+		for (size_t i = 0; i < min(sOuts.size(), sPres.size()); ++i)
+		{
+			if (sOuts[i].substr(0, sOuts[i].size() - 4) != sPres[i].substr(0, sPres[i].size() - 4))
+			{
+				if (sOuts.size() > sPres.size())
+				{
+					sOuts.erase(sOuts.begin() + i);
+					continue;
+				}
+				if (sOuts.size() < sPres.size())
+				{
+					sPres.erase(sPres.begin() + i);
+					continue;
+				}
+			}
+		}
+		sOuts_paths.resize(sOuts.size());
+		if (sOuts.size() > 0)
+		{
+			for (size_t i = 0; i < sOuts.size(); ++i)
+			{
+				sOuts_paths[i] = strdir + "\\" + sOuts[i];
+			}
+		}
+		sPres_paths.resize(sPres.size());
+		if (sPres.size() > 0)
+		{
+			for (size_t i = 0; i < sPres.size(); ++i)
+			{
+				sPres_paths[i] = strdir + "\\" + sPres[i];
+			}
+		}
+		if (sOuts.size() > 0 && sPres.size() > 0)
+		{
+			cntOutFiles = sOuts.size();
+			cntPreFiles = sPres.size();
+			cout << "Directory with .out and .pre files is opened" << endl;
+			return 0;
+		}
+		/*
 		QString qstrdir = QString::fromStdString(filesDirectory);
 		QDir dir(qstrdir);
 		cout << "Directory =" << filesDirectory.c_str() << endl;
@@ -192,6 +242,7 @@ int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
 			cout << "Directory with .out and .pre files is opened" << endl;
 			return 0;
 		}
+		*/
 		else
 		{
 			std::cout << "Error! Check existence of .out and .pre files" << endl;
@@ -204,9 +255,7 @@ int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
 
 int Core::ReadFiles()
 {
-	QString name, file;
-
-	if (outs.size() > 0 && outs.size() == pres.size())
+	if (sOuts.size() > 0 && sOuts.size() == sPres.size())
 	{
 		ParseFekoFile parseFeko;
 		antennas.clear();
@@ -217,38 +266,32 @@ int Core::ReadFiles()
 		//time_t t1, t2;
 		//double tpre = 0;
 		//double tout = 0;
-		for (int i=0; i<outs.size(); ++i)
+		antennas.resize(sOuts.size());
+		for (size_t i = 0; i<sOuts.size(); ++i)
 		{
-			Antenna newAntenna;
-			antennas.push_back(newAntenna);
-
 			antennas[i].aborted = false;
 
-			name = pre_names.at(i).toLocal8Bit();
-			cout << name.toStdString() << endl;
-			file = pres[i];
+			cout << sPres[i] << endl;
 			//time(&t1);
-			parseFeko.ParseFilePre(file.toStdString(), antennas[i]);
+			parseFeko.ParseFilePre(sPres_paths[i], antennas[i]);
 			//time(&t2);
 			//tpre += difftime(t2, t1);
 
 			if (antennas[i].aborted)
 			{
-				cout << "File " << name.toStdString() << " is aborted!" << endl;
+				cout << "File " << sPres[i] << " is aborted!" << endl;
 				continue;
 			}
 
-			name = out_names.at(i).toLocal8Bit();
-			cout << name.toStdString() << endl;
-			file = outs[i];
+			cout << sOuts[i] << endl;
 			//time (&t1);
-			parseFeko.ParseFileOut(file.toStdString(), antennas[i]);
+			parseFeko.ParseFileOut(sOuts_paths[i], antennas[i]);
 			//time (&t2);
 			//tout += difftime(t2, t1);
 
 			if (antennas[i].aborted) 
 			{
-				cout << "File " << name.toStdString() << " is aborted!"<< endl;
+				cout << "File " << sOuts[i] << " is aborted!" << endl;
 				continue;
 			}
 		}
@@ -299,10 +342,9 @@ int Core::WriteData()
 		{
 			if (!antennas[i].aborted)
 			{
-				if (out_names.size() > 0)
+				if (sOuts.size() > 0)
 				{
-					QString name = out_names.at(i).toLocal8Bit();
-					cout << name.toStdString() << endl;
+					cout << sOuts[i].substr(0, sOuts[i].length()-4) << endl;
 				}
 				pFBDataBase->WriteAntennaData(antennas[i], resId);
 			}

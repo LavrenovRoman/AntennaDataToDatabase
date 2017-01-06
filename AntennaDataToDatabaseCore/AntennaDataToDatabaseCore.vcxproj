@@ -97,12 +97,16 @@
     <ClInclude Include="Core.h" />
     <ClInclude Include="Core_API.h" />
     <ClInclude Include="FrbrdDatabase.h" />
+    <ClInclude Include="ini.h" />
+    <ClInclude Include="INIReader.h" />
     <ClInclude Include="ParseFekoFile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="FrbrdDatabase.cpp" />
     <ClCompile Include="ibpp\all_in_one.cpp" />
+    <ClCompile Include="ini.c" />
+    <ClCompile Include="INIReader.cpp" />
     <ClCompile Include="ParseFekoFile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

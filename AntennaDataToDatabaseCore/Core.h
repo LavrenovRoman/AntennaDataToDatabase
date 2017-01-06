@@ -1,10 +1,11 @@
 #ifndef CORE_H
 #define CORE_H
 
+#pragma warning(disable:4251)
+
 #include <memory>
 #include <vector>
 #include "Core_API.h"
-#include <QStringList>
 
 struct Antenna;
 struct Experiment;
@@ -34,10 +35,8 @@ public:
 	std::string GetPathCurrentDB();
 
 private:
-
 	std::shared_ptr<FrbrdDatabase> pFBDataBase;
-	QStringList outs, pres;
-	QStringList out_names, pre_names;
+	std::vector<std::string> sOuts, sPres, sOuts_paths, sPres_paths;
 	std::vector<Antenna> antennas;
 	std::shared_ptr<Experiment> pExperiment;
 	bool donorDB;

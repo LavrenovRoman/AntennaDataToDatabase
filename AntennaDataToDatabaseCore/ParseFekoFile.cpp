@@ -1285,9 +1285,13 @@ void ParseFekoFile::ParseFilePre(std::string _file, Antenna& _antenna)
 		if (!_antenna.inputPar.findSUBSTRATE && vsPre.back().find("SUBSTRATE") != string::npos)  { _antenna.inputPar.findSUBSTRATE = true; }
 		if (!_antenna.inputPar.findGROUND && vsPre.back().find("GROUND") != string::npos)        { _antenna.inputPar.findGROUND = true; }
 
-		if (_antenna.inputPar.findRADIATOR && _antenna.inputPar.findFEED && 
+		if (_antenna.inputPar.findRADIATOR && _antenna.inputPar.findFEED &&
 			_antenna.inputPar.findSUBSTRATE && _antenna.inputPar.findGROUND &&
-			vsPre.back().find("END PHYSICAL ANTENNA PARAMS") != string::npos) break;
+			vsPre.back().find("END PHYSICAL ANTENNA PARAMS") != string::npos)
+		{
+			allFile = allFile.substr(0, ++i);
+			break;
+		}
 		i++;
 	}
 
