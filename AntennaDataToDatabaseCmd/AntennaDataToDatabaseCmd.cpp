@@ -24,6 +24,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	int cntOutFiles = 0;
 	int cntPreFiles = 0;
 
+	if (argc != 2)
+	{
+		cout << "There is no directory as argument" << endl;
+		system("pause");
+		return 0;
+	}
+
 	//QString strdir = QString::fromWCharArray(argv[1]);
 	std::wstring wdir(argv[1]);
 	using convert_type = std::codecvt_utf8<wchar_t>;

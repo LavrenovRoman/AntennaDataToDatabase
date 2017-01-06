@@ -88,7 +88,7 @@ void WriteBinDataToBlobField(IBPP::Statement& statement, int fieldNum, const voi
 		statement->TransactionPtr());
 
 	size_t chunkSize;
-	unsigned long largestChunkSize = 64 * 1024 - 1;
+	unsigned long largestChunkSize = 32 * 1024 - 1;
 
 	size_t compbytesTotal = bytesTotal;
 	size_t compSize = bytesTotal;
