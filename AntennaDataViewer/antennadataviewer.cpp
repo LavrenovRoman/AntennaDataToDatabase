@@ -568,12 +568,10 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	case Concrete_Exp:
 		ViewDBSelect(Concrete_Exp);
 		VisibleWidget(pSelEx);
-		//pSelExAnt->Clear();
 		break;
 	case Concrete_Ant:
 		ViewDBSelect(Concrete_Ant);
 		VisibleWidget(pSelAnt);
-		//pSelExAnt->Clear();
 		break;
 	case Analisys_Sel:
 		if (pSelExAnt->GetDataSelectedExpAnt()->size() == 0)
