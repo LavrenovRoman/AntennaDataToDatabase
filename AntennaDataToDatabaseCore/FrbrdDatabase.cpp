@@ -1424,7 +1424,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 
 			if (_antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE)
 			{
-				if (_antenna.type == STRIPE || _antenna.type == PLANE)
+				if (_antenna.type == PLANE)
 				{
 					for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.size(); ++j)
 					{
@@ -1450,7 +1450,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 						}
 					}
 				}
-				if (_antenna.type == STRIPE)
+				if (_antenna.type == STRIPE || _antenna.type == WIRE)
 				{
 					for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.size(); ++j)
 					{
