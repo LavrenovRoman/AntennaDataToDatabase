@@ -1,9 +1,10 @@
-
+#include <iostream>
 #include "ibpp/ibpp.h"
 #include "FrbrdDatabase.h"
 #include <time.h>
 #include "Antenna.h"
 #include <sstream>
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 FrbrdDatabase::FrbrdDatabase()
@@ -1080,6 +1081,8 @@ int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 /// @details Запись антенны в базу данных
 int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 {
+	//clock_t tStart;
+
 	int idAntenna          = -1;
 	int idOutputPar        = -1; 
 	int idInputPar         = -1;
@@ -1108,6 +1111,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 			}
 		}
 
+		//tStart = clock();
 		{
 			IBPP::Transaction trInput = IBPP::TransactionFactory(*dataBase_);
 			trInput->Start();
@@ -1224,7 +1228,8 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 				}
 			}
 		}
-
+		//cout << "input: " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
+		//tStart = clock();
 		{
 			IBPP::Transaction trOutput = IBPP::TransactionFactory(*dataBase_);
 			trOutput->Start();
@@ -1619,6 +1624,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 				}
 			}
 		}
+		//cout << "output: " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
 	}
 
 

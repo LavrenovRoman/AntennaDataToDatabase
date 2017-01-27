@@ -9,7 +9,7 @@
 
 using namespace std;
 
-//#include <ctime> // time_t
+#include <ctime> // time_t
 
 Core::Core()
 {
@@ -90,14 +90,13 @@ int Core::ConnectDatabase(const char* pathDB)
 {
 	cout << "Try to connect database...  " << endl;
 	string server, path, login, password;
-	login = "SYSDBA";//sett.value("Login").toString().toStdString();
-	password = "masterkey";//sett.value("Password").toString().toStdString();
+	login = "SYSDBA";
+	password = "masterkey";
 	server = "127.0.0.1";
 	if (pathDB == nullptr)
 	{
 		std::string full_path = GetCurrentDir();
 		std::string fOptions("Options.ini");
-		//path_ = path_ + "/" + path__;
 		full_path = full_path + fOptions;
 		
 		cout << "Settings from file - " << full_path << endl;
@@ -195,54 +194,6 @@ int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
 			cout << "Directory with .out and .pre files is opened" << endl;
 			return 0;
 		}
-		/*
-		QString qstrdir = QString::fromStdString(filesDirectory);
-		QDir dir(qstrdir);
-		cout << "Directory =" << filesDirectory.c_str() << endl;
-		outs = dir.entryList(QStringList("*.out"));
-		pres = dir.entryList(QStringList("*.pre"));
-		cout << "Find " << outs.size() << " out files" << endl;
-		cout << "Find " << pres.size() << " pre files" << endl;
-		for (int i=0; i<min(outs.size(), pres.size()); ++i)
-		{
-			if (outs[i].left(outs[i].indexOf('.')) != pres[i].left(pres[i].indexOf('.')))
-			{
-				if (outs.size() > pres.size())
-				{
-					outs.erase(outs.begin() + i);
-					continue;
-				}
-				if (outs.size() < pres.size())
-				{
-					pres.erase(pres.begin() + i);
-					continue;
-				}
-			}
-		}
-		if (outs.size() > 0)
-		{
-			out_names = outs;
-			for (int i=0; i<outs.size(); ++i)
-			{
-				outs[i] = qstrdir + "/" + outs[i];
-			}
-		}
-		if (pres.size() > 0)
-		{
-			pre_names = pres;
-			for (int i=0; i<pres.size(); ++i)
-			{
-				pres[i] = qstrdir + "/" + pres[i];
-			}
-		}
-		if (outs.size() > 0 && pres.size() > 0)
-		{
-			cntOutFiles = outs.size();
-			cntPreFiles = pres.size();
-			cout << "Directory with .out and .pre files is opened" << endl;
-			return 0;
-		}
-		*/
 		else
 		{
 			std::cout << "Error! Check existence of .out and .pre files" << endl;
@@ -263,19 +214,13 @@ int Core::ReadFiles()
 		std::string experiment_name = filesDirectory + "\\comment.txt";
 		parseFeko.ParseFileComment(experiment_name, *(pExperiment.get()));
 
-		//time_t t1, t2;
-		//double tpre = 0;
-		//double tout = 0;
 		antennas.resize(sOuts.size());
 		for (size_t i = 0; i<sOuts.size(); ++i)
 		{
 			antennas[i].aborted = false;
 
 			cout << sPres[i] << endl;
-			//time(&t1);
 			parseFeko.ParseFilePre(sPres_paths[i], antennas[i]);
-			//time(&t2);
-			//tpre += difftime(t2, t1);
 
 			if (antennas[i].aborted)
 			{
@@ -284,10 +229,7 @@ int Core::ReadFiles()
 			}
 
 			cout << sOuts[i] << endl;
-			//time (&t1);
 			parseFeko.ParseFileOut(sOuts_paths[i], antennas[i]);
-			//time (&t2);
-			//tout += difftime(t2, t1);
 
 			if (antennas[i].aborted) 
 			{
@@ -295,9 +237,6 @@ int Core::ReadFiles()
 				continue;
 			}
 		}
-
-		//cout << tpre << endl;
-		//cout << tout << endl;
 
 		cout << "Reading files is finished" << endl;
 		return 0;
@@ -340,6 +279,7 @@ int Core::WriteData()
 
 		for (size_t i=0; i<antennas.size(); ++i)
 		{
+			//clock_t tStart = clock();
 			if (!antennas[i].aborted)
 			{
 				if (sOuts.size() > 0)
@@ -348,6 +288,7 @@ int Core::WriteData()
 				}
 				pFBDataBase->WriteAntennaData(antennas[i], resId);
 			}
+			//cout << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
 		}
 
 		cout << "Writing files to database is finished" << endl;
