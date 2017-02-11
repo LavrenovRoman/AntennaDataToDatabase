@@ -21,11 +21,11 @@ public:
 	int DeleteExperiment(int idExp);
 	int SetDonorDB();
 	int ConnectDatabase(const char* pathDB = nullptr);
-	int OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles);
+	int OpenDirectory(const std::string &strdir, int &cntOutFiles, int &cntPreFiles);
 	int ReadFiles();
 	int WriteData();
 	int PrepareExperimentBeforeWrite();
-	int Request(std::string requestStr, int countSelect, std::vector<std::vector<double>>& result);
+	int Request(const std::string &requestStr, int countSelect, std::vector<std::vector<double>>& result);
 	int GetExperiments(std::vector<int>& ids, std::vector<Experiment>& exps, bool fullComment = false);
 	int GetAntennasByExperiment(std::vector<Antenna>& antennas, std::vector<int>& antennasID, int idExperiment);
 	int SetData(Experiment &exp, std::vector<Antenna>& _antennas);
@@ -42,7 +42,7 @@ private:
 	bool donorDB;
 	std::string pathDonor, pathRecipient, pathCurrentDB, filesDirectory;
 
-	void SetPaths(std::string spath);
+	void SetPaths(const std::string &spath);
 };
 
 #endif // CORE_H

@@ -248,12 +248,12 @@ void AntennaDataViewer::ClickedCalcCorr()
 	if (!parInsideAntenna)
 	{
 		viewDataExp.clear();
-		for (int i = 0; i < pSelAll->GetExpsID()->size(); i++)
+		for (size_t i = 0; i < pSelAll->GetExpsID()->size(); i++)
 		{
 			int id_ex = pSelAll->GetExpsID()->at(i);
 			if (ui.listDBSelect->item(DB_SelectExp)->isSelected() && std::find(std::begin(IdsExperiment), std::end(IdsExperiment), id_ex) == std::end(IdsExperiment)) continue;
 			if (ui.listDBSelect->item(Concrete_Exp)->isSelected() && IdExperiment != -1 && id_ex != IdExperiment) continue;
-			for (int j = 0; j < pSelAll->GetAnts()->at(i).size(); ++j)
+			for (size_t j = 0; j < pSelAll->GetAnts()->at(i).size(); ++j)
 			{
 				Antenna _ant = pSelAll->GetAnts()->at(i).at(j);
 				if (ui.listDBSelect->item(Analisys_Sel)->isSelected() && !pSelExAnt->HaveAntenna(pSelAll->GetAntsID()->at(i).at(j))) continue;
@@ -264,12 +264,12 @@ void AntennaDataViewer::ClickedCalcCorr()
 				if (currentOutput == 2 || currentOutput == 3 || currentInput == 4 || currentInput == 5)
 				{
 					minS11 = 1000000;
-					for (int k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
+					for (size_t k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
 					{
 						double temp = _ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._SCATTERING_PARAMETERS.S11;
 						if (temp < minS11) {
 							minS11 = temp;
-							minS11W = _ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[0].Frequency;
+							minS11W = _ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency;
 						}
 					}
 				}
@@ -319,19 +319,19 @@ void AntennaDataViewer::ClickedCalcCorr()
 	}
 	else
 	{
-		for (int i = 0; i < pSelAll->GetExpsID()->size(); i++)
+		for (size_t i = 0; i < pSelAll->GetExpsID()->size(); i++)
 		{
 			if (IdExperiment != -1 && pSelAll->GetExpsID()->at(i) != IdExperiment) continue;
-			for (int j = 0; j < pSelAll->GetAnts()->at(i).size(); ++j)
+			for (size_t j = 0; j < pSelAll->GetAnts()->at(i).size(); ++j)
 			{
 				if (IdAntenna != -1 && pSelAll->GetAntsID()->at(i).at(j) != IdAntenna) continue;
 				Antenna _ant = pSelAll->GetAnts()->at(i).at(j);
-				for (int k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
+				for (size_t k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
 				{
 					switch (currentInput)
 					{
 					case 0:
-						res[0].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[0].Frequency);
+						res[0].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency);
 						break;
 					default:
 						break;
@@ -538,7 +538,7 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 	ui.listDBSelect->clearFocus();
 
 	int selectRow = -1;
-	for (size_t i = 0; i<ui.listDBSelect->count(); ++i)
+	for (int i = 0; i<ui.listDBSelect->count(); ++i)
 	{
 		if (ui.listDBSelect->item(i) == pSelectRow)
 		{
@@ -683,7 +683,7 @@ void AntennaDataViewer::PlotMouseRelease(QMouseEvent *event)
 			if (selectedPoints.size() > 0)
 			{
 				std::vector<ViewDataExp> selectedDataExpAnt;
-				for (int i = 0; i < selectedPoints.size(); ++i)
+				for (size_t i = 0; i < selectedPoints.size(); ++i)
 				{
 					if (viewDataExp.size() > selectedPoints[i])
 					{
@@ -851,27 +851,29 @@ void AntennaDataViewer::CreateGraph()
     //Добавляем один график в widget
     ui.PlotWidget->addGraph();
     //Говорим, что отрисовать нужно график по нашим двум массивам x и y
-    ui.PlotWidget->graph(0)->setData(x, y);
+	QCPGraph * graph0 = ui.PlotWidget->graph(0);
+	graph0->setData(x, y);
  
-    ui.PlotWidget->graph(0)->setPen(QColor(50, 50, 50, 255));//задаем цвет точки
-    ui.PlotWidget->graph(0)->setLineStyle(QCPGraph::lsNone);//убираем линии
+	graph0->setPen(QColor(50, 50, 50, 255));//задаем цвет точки
+	graph0->setLineStyle(QCPGraph::lsNone);//убираем линии
     //формируем вид точек
-    ui.PlotWidget->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 4));
+	graph0->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 4));
 
 	ui.PlotWidget->clearItems();
 
 	if (!selectedPoints.empty())
 	{
-		for (int i = 0; i < selectedPoints.size(); ++i)
+		for (size_t i = 0; i < selectedPoints.size(); ++i)
 		{
 			ui.PlotWidget->addGraph();
 			QVector<double> x1, y1; //Массивы координат точек
 			x1.push_back(stdx[selectedPoints[i]]);
 			y1.push_back(stdy[selectedPoints[i]]);
-			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setData(x1, y1);
-			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setPen(QColor(50, 50, 50, 255));//задаем цвет точки
-			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setLineStyle(QCPGraph::lsNone);//убираем линии
-			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+			QCPGraph * graphlast = ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1);
+			graphlast->setData(x1, y1);
+			graphlast->setPen(QColor(50, 50, 50, 255));//задаем цвет точки
+			graphlast->setLineStyle(QCPGraph::lsNone);//убираем линии
+			graphlast->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
 		}
 
 
@@ -879,7 +881,7 @@ void AntennaDataViewer::CreateGraph()
 		QVector<QCPData> scatterData;
 		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
 
-		for (int i = 0; i < selectedPoints.size(); ++i)
+		for (size_t i = 0; i < selectedPoints.size(); ++i)
 		{
 			int posx = linePixelData[selectedPoints[i]].x();
 			int posy = linePixelData[selectedPoints[i]].y();
@@ -968,7 +970,7 @@ void AntennaDataViewer::CreateGraph()
 			while (c < linePixelData.size())
 			{
 				int p1=-1, p2=-1, p3=-1, p4 = -1;
-				for (int i = c; i < linePixelData.size(); ++i, ++c)
+				for (size_t i = c; i < linePixelData.size(); ++i, ++c)
 				{
 					if (linePixelData[i].y() < selectedY) p1 = i;
 					else
@@ -978,7 +980,7 @@ void AntennaDataViewer::CreateGraph()
 						break;
 					}
 				}
-				for (int i = c; i < linePixelData.size(); ++i, ++c)
+				for (size_t i = c; i < linePixelData.size(); ++i, ++c)
 				{
 					if (linePixelData[i].y() > selectedY) p3 = i;
 					else

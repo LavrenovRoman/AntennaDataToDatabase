@@ -50,7 +50,7 @@ std::vector<ViewDataExp> * SelectedAntennas::GetDataSelectedExpAnt()
 	return &selectedDataExpAnt;
 }
 
-void SelectedAntennas::Reset(std::vector<ViewDataExp> _selectedDataExpAnt)
+void SelectedAntennas::Reset(const std::vector<ViewDataExp> &_selectedDataExpAnt)
 {
 	selectedDataExpAnt = _selectedDataExpAnt;
 
@@ -62,12 +62,12 @@ void SelectedAntennas::Reset(std::vector<ViewDataExp> _selectedDataExpAnt)
 	selectedAntId.clear();
 
 	int s = 0;
-	for (int i = 0; i < pkCoreData->GetExpsID()->size(); ++i)
+	for (size_t i = 0; i < pkCoreData->GetExpsID()->size(); ++i)
 	{
 		while (s < selectedDataExpAnt.size() && pkCoreData->GetExpsID()->at(i) == selectedDataExpAnt[s].IdExperiment)
 		{
 			selectedExpId.push_back(i);
-			for (int j = 0; j < pkCoreData->GetAntsID()->at(i).size(); ++j)
+			for (size_t j = 0; j < pkCoreData->GetAntsID()->at(i).size(); ++j)
 			{
 				if (pkCoreData->GetAntsID()->at(i).at(j) == selectedDataExpAnt[s].IdAntenna)
 				{
@@ -78,7 +78,7 @@ void SelectedAntennas::Reset(std::vector<ViewDataExp> _selectedDataExpAnt)
 		}
 	}
 
-	for (int i = 0; i<selectedDataExpAnt.size(); ++i)
+	for (size_t i = 0; i<selectedDataExpAnt.size(); ++i)
 	{
 		QString txt = QString::fromLocal8Bit("Эксперимент: ") + QString::number(selectedDataExpAnt[i].IdExperiment) + QString::fromLocal8Bit(" Антенна: ") + QString::number(selectedDataExpAnt[i].IdAntenna);
 		ui.listWidget->insertItem(i, txt);
@@ -115,25 +115,28 @@ void SelectedAntennas::SortResult(int l, int r)
 void SelectedAntennas::ExpAntChanged(int expantChange)
 {
 	if (expantChange >= 0)
-	{		
-		QString date = QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).date.tm_mday) + "." + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).date.tm_mon) + "." + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).date.tm_year);
+	{	
+		Experiment & exp = pkCoreData->GetExps()->at(selectedExpId[expantChange]);
+
+		QString date = QString::number(exp.date.tm_mday) + "." + QString::number(exp.date.tm_mon) + "." + QString::number(exp.date.tm_year);
 		ui.leDate->setText(date);
 
 		QString cicles;
-		for (size_t i = 0; i<pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles.size(); ++i)
+		for (size_t i = 0; i<exp.cycles.size(); ++i)
 		{
-			cicles += QString::fromStdString(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].name) + " " + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].pBegin) + " " + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].pEnd) + " " + QString::number(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].pStep);
+			Experiment_Param &expp = exp.cycles[i];
+			cicles += QString::fromStdString(expp.name) + " " + QString::number(expp.pBegin) + " " + QString::number(expp.pEnd) + " " + QString::number(expp.pStep);
 			if (i != pkCoreData->GetExps()->at(expantChange).cycles.size() - 1)	cicles += "   ";
 		}
 		ui.leCicles->setText(cicles);
 
-		ui.leComm->setText(QString::fromLocal8Bit(pkCoreData->GetExps()->at(selectedExpId[expantChange]).comment.data()));
+		ui.leComm->setText(QString::fromLocal8Bit(exp.comment.data()));
 
 		QString ciclesA;
-		for (size_t i = 0; i<pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles.size(); ++i)
+		for (size_t i = 0; i<exp.cycles.size(); ++i)
 		{
-			if (pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].name == "L[0]")
-				ciclesA += QString::fromStdString(pkCoreData->GetExps()->at(selectedExpId[expantChange]).cycles[i].name) + " " + QString::number(pkCoreData->GetAnts()->at(selectedExpId[expantChange]).at(selectedAntId[expantChange]).inputPar.Radiator.ScaleX);
+			if (exp.cycles[i].name == "L[0]")
+				ciclesA += QString::fromStdString(exp.cycles[i].name) + " " + QString::number(pkCoreData->GetAnts()->at(selectedExpId[expantChange]).at(selectedAntId[expantChange]).inputPar.Radiator.ScaleX);
 			if (i != pkCoreData->GetExps()->at(expantChange).cycles.size() - 1)	cicles += "   ";
 		}
 		ui.leCicles_2->setText(ciclesA);

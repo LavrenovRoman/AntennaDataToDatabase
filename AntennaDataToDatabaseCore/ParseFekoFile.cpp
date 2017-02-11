@@ -21,9 +21,9 @@ ParseFekoFile::ParseFekoFile()
 	vsOut.reserve(50000);
 }
 
-void ParseFekoFile::ParseFileComment(std::string _file, Experiment& _experiment)
+void ParseFekoFile::ParseFileComment(const std::string &_file, Experiment& _experiment)
 {
-	std::string current_str, word, token;
+	std::string current_str, word;
 	std::vector<std::string> vs;
 	ifstream file(_file.c_str());
 	if (file.is_open())
@@ -64,7 +64,7 @@ void ParseFekoFile::ParseFileComment(std::string _file, Experiment& _experiment)
 	}
 }
 
-void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
+void ParseFekoFile::ParseFileOut(const std::string &_file, Antenna& _antenna)
 {
 	int valueInt = 0;
 	double valueDouble;
@@ -431,8 +431,8 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 
 		if (_antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE)
 		{
-			while (true)
-			{
+			//while (true)
+			//{
 				EXCITATION_BY_VOLTAGE_SOURCE NEW_EXCITATION_BY_VOLTAGE_SOURCE;
 				words = "EXCITATION BY VOLTAGE SOURCE AT";
 				while (vsOut[cs].find(words) == string::npos)
@@ -441,15 +441,15 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 					if (cs == vsOut.size()) { stop = true;  break; }
 				}
 				if (stop) { break; }
-				words = "N =";
-				while (vsOut[cs].find(words) == string::npos) { cs++; }
-				{
-					stringstream ss(vsOut[cs]);
-					getline(ss, token, '=');
-					getline(ss, token, '=');
-					valueInt = stoi(token);
-					NEW_EXCITATION_BY_VOLTAGE_SOURCE.ExcitationIndex = valueInt;
-				}
+				//words = "N =";
+				//while (vsOut[cs].find(words) == string::npos) { cs++; }
+				//{
+				//	stringstream ss(vsOut[cs]);
+				//	getline(ss, token, '=');
+				//	getline(ss, token, '=');
+				//	valueInt = stoi(token);
+				//	NEW_EXCITATION_BY_VOLTAGE_SOURCE.ExcitationIndex = valueInt;
+				//}
 				words = "Frequency in Hz:";
 				while (vsOut[cs].find(words) == string::npos) { cs++; }
 				{
@@ -573,11 +573,11 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 						NEW_EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirZ = valueDouble;
 					}
 				}
-				NEW_DATA_FOR_ONE_FREQ._VEC_EXCITATION_BY_VOLTAGE_SOURCE.push_back(NEW_EXCITATION_BY_VOLTAGE_SOURCE);
+				NEW_DATA_FOR_ONE_FREQ._EXCITATION_BY_VOLTAGE_SOURCE = NEW_EXCITATION_BY_VOLTAGE_SOURCE;
 
-				while (vsOut[cs].find("BY VOLTAGE SOURCE") == string::npos && vsOut[cs].find("GREEN") == string::npos && vsOut[cs].find("MATRIX") == string::npos) { cs++; }
-				if (vsOut[cs].find("GREEN") != string::npos || vsOut[cs].find("MATRIX") != string::npos) { break; }
-			}
+				//while (vsOut[cs].find("BY VOLTAGE SOURCE") == string::npos && vsOut[cs].find("GREEN") == string::npos && vsOut[cs].find("MATRIX") == string::npos) { cs++; }
+				//if (vsOut[cs].find("GREEN") != string::npos || vsOut[cs].find("MATRIX") != string::npos) { break; }
+			//}
 		}
 
 		if (_antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS)
@@ -745,8 +745,8 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 
 		if (_antenna.outputPar.findDATA_OF_THE_VOLTAGE_SOURCE)
 		{
-			while (true)
-			{
+			//while (true)
+			//{
 				DATA_OF_THE_VOLTAGE_SOURCE NEW_DATA_OF_THE_VOLTAGE_SOURCE;
 
 				words = "DATA OF THE VOLTAGE SOURCE";
@@ -823,10 +823,10 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 					valueDouble = stod(token);
 					NEW_DATA_OF_THE_VOLTAGE_SOURCE.Power = valueDouble;
 				}
-				NEW_DATA_FOR_ONE_FREQ._VEC_DATA_OF_THE_VOLTAGE_SOURCE.push_back(NEW_DATA_OF_THE_VOLTAGE_SOURCE);
-				while (vsOut[cs].find("DATA OF THE VOLTAGE SOURCE") == string::npos && vsOut[cs].find("SCATTERING PARAMETERS") == string::npos && vsOut[cs].find("LOSSES") == string::npos) { cs++; }
-				if (vsOut[cs].find("SCATTERING PARAMETERS") != string::npos || vsOut[cs].find("LOSSES") != string::npos) { break; }
-			}
+				NEW_DATA_FOR_ONE_FREQ._DATA_OF_THE_VOLTAGE_SOURCE = NEW_DATA_OF_THE_VOLTAGE_SOURCE;
+				//while (vsOut[cs].find("DATA OF THE VOLTAGE SOURCE") == string::npos && vsOut[cs].find("SCATTERING PARAMETERS") == string::npos && vsOut[cs].find("LOSSES") == string::npos) { cs++; }
+				//if (vsOut[cs].find("SCATTERING PARAMETERS") != string::npos || vsOut[cs].find("LOSSES") != string::npos) { break; }
+			//}
 		}
 
 		if (_antenna.outputPar.findSCATTERING_PARAMETERS)
@@ -1164,10 +1164,10 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 	for (size_t i=0; i<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++i)
 	{
 		vecS11.push_back(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.S11);
-		vecW.push_back(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[0].Frequency);
+		vecW.push_back(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency);
 		vecS11Db.push_back(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SMagnitudeDB);
 	}
-	int N = vecS11.size();
+	size_t N = vecS11.size();
 	int j = 0;
 	while ((vecS11[j] > vecS11[j + 1]) && (j < N - 1)) j++;
 	_antenna.outputPar.fst_s11 = vecS11[j];
@@ -1254,10 +1254,10 @@ void ParseFekoFile::ParseFileOut(std::string _file, Antenna& _antenna)
 	valueInt = 0;
 }
 
-void ParseFekoFile::ParseFilePre(std::string _file, Antenna& _antenna)
+void ParseFekoFile::ParseFilePre(const std::string &_file, Antenna& _antenna)
 {
 	//setlocale(LC_ALL, "Russian");
-	std::string word, token;
+	std::string word;
 	_antenna.pathPre = _file;
 	std::vector<std::string> vs;
 

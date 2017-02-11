@@ -13,7 +13,7 @@ public:
 	SelectedAntennas(SelectAll* pCoreData, QWidget *parent = 0);
 	~SelectedAntennas();
 	void Clear();
-	void Reset(std::vector<ViewDataExp> _selectedDataExpAnt);
+	void Reset(const std::vector<ViewDataExp> &_selectedDataExpAnt);
 	std::vector<ViewDataExp> * GetDataSelectedExpAnt();
 	bool HaveAntenna(int ant);
 

@@ -112,7 +112,7 @@ void WidgetCopyDB::CopyDB()
 			donorExpIndexes.push_back(i);
 		}
 	}
-	for (int i = 0; i < donorExpIndexes.size(); ++i)
+	for (size_t i = 0; i < donorExpIndexes.size(); ++i)
 	{
 		std::vector<Antenna> antennas;
 		std::vector<int> antennasId;

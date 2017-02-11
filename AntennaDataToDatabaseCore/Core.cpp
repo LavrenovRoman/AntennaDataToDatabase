@@ -64,7 +64,7 @@ std::string Core::GetCurrentDir()
 	return path;
 }
 
-void Core::SetPaths(std::string spath)
+void Core::SetPaths(const std::string &spath)
 {
 	INIReader reader(spath);
 	pathRecipient = reader.Get("", "path", "");
@@ -133,7 +133,7 @@ int Core::ConnectDatabase(const char* pathDB)
 	return 0;
 }
 
-int Core::OpenDirectory(std::string strdir, int &cntOutFiles, int &cntPreFiles)
+int Core::OpenDirectory(const std::string &strdir, int &cntOutFiles, int &cntPreFiles)
 {
 	if (!strdir.empty())
 	{
@@ -277,9 +277,9 @@ int Core::WriteData()
 			}
 		}
 
+		clock_t tStart = clock();
 		for (size_t i=0; i<antennas.size(); ++i)
 		{
-			//clock_t tStart = clock();
 			if (!antennas[i].aborted)
 			{
 				if (sOuts.size() > 0)
@@ -288,8 +288,8 @@ int Core::WriteData()
 				}
 				pFBDataBase->WriteAntennaData(antennas[i], resId);
 			}
-			//cout << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
 		}
+		cout << "all antennas write by " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
 
 		cout << "Writing files to database is finished" << endl;
 		return 0;
@@ -298,7 +298,7 @@ int Core::WriteData()
 	return -1;
 }
 
-int Core::Request(std::string requestStr, int countSelect, std::vector<std::vector<double>>& result)
+int Core::Request(const std::string &requestStr, int countSelect, std::vector<std::vector<double>>& result)
 {
 	return pFBDataBase->Request(requestStr, countSelect, result);
 }

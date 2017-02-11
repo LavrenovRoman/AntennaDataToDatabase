@@ -9,9 +9,9 @@ class ParseFekoFile
 {
 public:
 	ParseFekoFile();
-	void ParseFileComment(std::string _file, Experiment& _experiment);
-	void ParseFileOut(std::string _file, Antenna& _antenna);
-	void ParseFilePre(std::string _file, Antenna& _antenna);
+	void ParseFileComment(const std::string &_file, Experiment& _experiment);
+	void ParseFileOut(const std::string &_file, Antenna& _antenna);
+	void ParseFilePre(const std::string &_file, Antenna& _antenna);
 
 private:
 	std::vector<std::string> vsOut, vsPre;

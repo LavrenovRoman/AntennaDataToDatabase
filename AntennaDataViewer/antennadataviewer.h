@@ -72,7 +72,7 @@ private:
 	int IdAntenna;
 	
 	bool parInsideAntenna;
-	std::vector<int> selectedPoints;
+	std::vector<size_t> selectedPoints;
 	std::vector<ViewDataExp> viewDataExp;
 	SelectedArea selectedArea;
 	double selectedY;

@@ -32,7 +32,7 @@ void SelectAntenna::Reset()
 {
 	ui.okButton->setEnabled(false);
 	ui.listWidget->clear();
-	for (int i = 0; i<pkCoreData->GetExpsID()->size(); ++i)
+	for (size_t i = 0; i<pkCoreData->GetExpsID()->size(); ++i)
 	{
 		ui.listWidget->insertItem(i, QString::number(pkCoreData->GetExpsID()->at(i)));
 	}
@@ -50,18 +50,21 @@ void SelectAntenna::ExpChanged(int expChange)
 	{
 		ui.okButton->setEnabled(false);
 
-		QString date = QString::number(pkCoreData->GetExps()->at(expChange).date.tm_mday) + "." + QString::number(pkCoreData->GetExps()->at(expChange).date.tm_mon) + "." + QString::number(pkCoreData->GetExps()->at(expChange).date.tm_year);
+		Experiment & exp = pkCoreData->GetExps()->at(expChange);
+		QString date = QString::number(exp.date.tm_mday) + "." + QString::number(exp.date.tm_mon) + "." + QString::number(exp.date.tm_year);
 		ui.leDate->setText(date);
 
 		QString cicles;
-		for (size_t i = 0; i<pkCoreData->GetExps()->at(expChange).cycles.size(); ++i)
+		std::vector<Experiment_Param> & crcl = exp.cycles;
+		for (size_t i = 0; i < crcl.size(); ++i)
 		{
-			cicles += QString::fromStdString(pkCoreData->GetExps()->at(expChange).cycles[i].name) + " " + QString::number(pkCoreData->GetExps()->at(expChange).cycles[i].pBegin) + " " + QString::number(pkCoreData->GetExps()->at(expChange).cycles[i].pEnd) + " " + QString::number(pkCoreData->GetExps()->at(expChange).cycles[i].pStep);
-			if (i != pkCoreData->GetExps()->at(expChange).cycles.size() - 1)	cicles += "   ";
+			Experiment_Param & exP = crcl[i];
+			cicles += QString::fromStdString(exP.name) + " " + QString::number(exP.pBegin) + " " + QString::number(exP.pEnd) + " " + QString::number(exP.pStep);
+			if (i != crcl.size() - 1)	cicles += "   ";
 		}
 		ui.leCicles->setText(cicles);
 
-		ui.leComm->setText(QString::fromLocal8Bit(pkCoreData->GetExps()->at(expChange).comment.data()));
+		ui.leComm->setText(QString::fromLocal8Bit(exp.comment.data()));
 
 		IdExperiment = pkCoreData->GetExpsID()->at(expChange);
 

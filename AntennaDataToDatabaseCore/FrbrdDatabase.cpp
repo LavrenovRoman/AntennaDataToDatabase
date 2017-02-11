@@ -114,7 +114,7 @@ void WriteBinDataToBlobField(IBPP::Statement& statement, int fieldNum, const voi
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// @details Считываение параметров подключения к базе данных
-int FrbrdDatabase::Initialization(std::string server, std::string path, std::string login, std::string password)
+int FrbrdDatabase::Initialization(const std::string &server, const std::string &path, const std::string &login, const std::string &password)
 {
 	if (CreateConnection(server, path, login, password) != 0)
 	{
@@ -151,7 +151,7 @@ int FrbrdDatabase::CreateConnection(const std::string& server_, const std::strin
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// @details Выполнение select запроса
-int FrbrdDatabase::Request(std::string requestStr, int countSelect, std::vector<std::vector<double>>& result)
+int FrbrdDatabase::Request(const std::string &requestStr, int countSelect, std::vector<std::vector<double>>& result)
 {
 	double d1, d2;
 	result.clear();
@@ -220,10 +220,10 @@ int FrbrdDatabase::DeleteExperiment(int idExperiment)
 /// @details Получение всех экспериментов из БД
 int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>& exps, bool fullComment)
 {
-	int id;
+	int id, param_size;
 	IBPP::Date date;
-	std::string comm, name, word;
-	double b,e,s;
+	std::string comm, word;
+	std::vector<std::string> vs;
 
 	ids.clear();
 	exps.clear();
@@ -235,23 +235,27 @@ int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>
 			try
 			{
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExperiments);
-				st->Prepare("select id, WRITEN_DATE, COMMENT from EXPERIMENT order by id");
+				st->Prepare("select id, WRITEN_DATE, COMMENT, PARAMS_SIZE, PARAMS from EXPERIMENT order by id");
 				st->Execute();
 				while (st->Fetch())
 				{
 					st->Get(1, id);
 					st->Get(2, date);
 					st->Get(3, comm);
+					st->Get(4, param_size);
+					char * c_param = GetBinDataFromBlobField(st, 5, param_size);
+					std::string s_param(c_param, param_size);
+
 					ids.push_back(id);
 					Experiment newEx;
 					if (!fullComment)
 					{
-						std::vector<std::string> vs;
 						std::stringstream ss(comm);
+						vs.clear();
 						while (ss >> word) vs.push_back(word);
 						if (vs.back()[0] == '(' && vs.back().back() == ')')
 						{
-							comm = "";
+							comm.clear();
 							for (size_t i = 0; i < vs.size() - 1; ++i)
 							{
 								if (i != 0) comm += " ";
@@ -259,11 +263,26 @@ int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>
 							}
 						}
 					}
+
 					newEx.comment = comm;
 					newEx.date.tm_year = date.Year();
 					newEx.date.tm_mon = date.Month();
 					newEx.date.tm_mday = date.Day();
 					exps.push_back(newEx);
+
+					stringstream strs(s_param);
+					vs.clear();
+					while (strs >> word) vs.push_back(word);
+					for (size_t i = 0; i < vs.size()/4; ++i)
+					{
+						Experiment_Param newExp;
+						newExp.name   = vs[0 + 4*i];
+						newExp.pBegin = stod(vs[1 + 4*i]);
+						newExp.pEnd   = stod(vs[2 + 4*i]);
+						newExp.pStep  = stod(vs[3 + 4*i]);
+						exps.back().cycles.push_back(newExp);
+					}
+					delete[] c_param;
 				}
 				trExperiments->Commit();
 			}
@@ -272,48 +291,7 @@ int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>
 				return -1;
 			}
 		}
-		{
-			for (size_t i=0; i<ids.size(); ++i)
-			{
-				IBPP::Transaction trExperiments = IBPP::TransactionFactory(*dataBase_);
-				trExperiments->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExperiments);
-					st->Prepare("select EXP_NAME, EXP_BEGIN, EXP_END, EXP_STEP from EXPERIMENT_PARAM where EXPERIMENT_PARAM.ID_EXPERIMENT = ?");
-					st->Set(1, ids[i]);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1, name);
-						st->Get(2, b);
-						st->Get(3, e);
-						st->Get(4, s);
-						Experiment_Param newEx;
-						newEx.name = name;
-						newEx.pBegin = b;
-						newEx.pEnd = e;
-						newEx.pStep = s;
-						exps[i].cycles.push_back(newEx);
-					}
-					trExperiments->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-			}
-		}
 	}
-
-	/*
-	std::vector<Antenna> antennas;
-	for (size_t i = 0; i < ids.size(); ++i)
-	{
-		GetAntennas(antennas, ids[i]);
-	}
-	*/
-
 	return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -364,31 +342,90 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 		{
 			for (size_t i = 0; i < antennas.size(); ++i)
 			{
+				Antenna & antI = antennas[i];
+
 				//INPUT PARAMETERS
-				int input_id;
 				IBPP::Transaction trInputAntennas = IBPP::TransactionFactory(*dataBase_);
 				trInputAntennas->Start();
 				try
 				{
-					double scalex, scaley, radius;
-					int fractal_n, fractal_m;
+					int fractal_n, mpoints_size, grd_size;
 					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInputAntennas);
-					st->Prepare("select scalex, scaley, radius, fractal_n, fractal_m, id from INPUT_PARAMS where ID_ANTENNA = ?");
+					st->Prepare("select scalex, scaley, radius, fractal_n, fractal_m, mpoints_size, points, affine, mpoints, FEED_X, FEED_Y, S_PERMITTIVITY, S_LOSSTANGENT, S_DENSITY, S_THICKNESS, S_COORLEFTUPX, S_COORLEFTUPY, S_COORRIGHTDOWNX, S_COORRIGHTDOWNY, GROUND_SIZE, GROUND from INPUT_PARAMS where ID_ANTENNA = ? ");
 					st->Set(1, antennasID[i]);
 					st->Execute();
 					while (st->Fetch())
 					{
-						st->Get(1, scalex);
-						st->Get(2, scaley);
-						st->Get(3, radius);
-						st->Get(4, fractal_n);
-						st->Get(5, fractal_m);
-						st->Get(6, input_id);
-						antennas[i].inputPar.Radiator.Radius_StripWidth_FeedLineWidth = radius;
-						antennas[i].inputPar.Radiator.ScaleX = scalex;
-						antennas[i].inputPar.Radiator.ScaleY = scaley;
-						antennas[i].inputPar.Radiator.fr_m = fractal_m;
-						antennas[i].inputPar.Radiator.fr_N = fractal_n;
+						st->Get(1, antI.inputPar.Radiator.ScaleX);
+						st->Get(2, antI.inputPar.Radiator.ScaleY);
+						st->Get(3, antI.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
+						st->Get(4, antI.inputPar.Radiator.fr_N);
+						st->Get(5, antI.inputPar.Radiator.fr_m);
+						st->Get(6, mpoints_size);
+						fractal_n = antI.inputPar.Radiator.fr_N;
+						char * с_points = GetBinDataFromBlobField(st, 7, (fractal_n + 1)*sizeof(double) * 3);
+						double * points = (double *) с_points;
+						char * c_affine = GetBinDataFromBlobField(st, 8, fractal_n*sizeof(double) * 6);
+						double * affine = (double *) c_affine;
+						char * c_mpoints = GetBinDataFromBlobField(st, 9, mpoints_size);
+						double * mpoints = (double *) c_mpoints;
+						st->Get(10, antI.inputPar.Feed.FeedX);
+						st->Get(11, antI.inputPar.Feed.FeedY);
+						st->Get(12, antI.inputPar.Substrate.Permittivity);
+						st->Get(13, antI.inputPar.Substrate.LossTangent);
+						st->Get(14, antI.inputPar.Substrate.Density);
+						st->Get(15, antI.inputPar.Substrate.Thickness);
+						st->Get(16, antI.inputPar.Substrate.CoorLeftUpX);
+						st->Get(17, antI.inputPar.Substrate.CoorLeftUpY);
+						st->Get(18, antI.inputPar.Substrate.CoorRightDownX);
+						st->Get(19, antI.inputPar.Substrate.CoorRightDownY);
+						st->Get(20, grd_size);
+						char * c_ground = GetBinDataFromBlobField(st, 21, grd_size);
+						double * ground = (double *) c_ground;
+						antI.inputPar.Radiator.fr_pT.resize(fractal_n+1);
+						antI.inputPar.Radiator.fr_pX.resize(fractal_n+1);
+						antI.inputPar.Radiator.fr_pY.resize(fractal_n+1);
+						antI.inputPar.Radiator.fr_D11.resize(fractal_n);
+						antI.inputPar.Radiator.fr_D12.resize(fractal_n);
+						antI.inputPar.Radiator.fr_D21.resize(fractal_n);
+						antI.inputPar.Radiator.fr_D22.resize(fractal_n);
+						antI.inputPar.Radiator.fr_lam.resize(fractal_n);
+						antI.inputPar.Radiator.fr_al.resize(fractal_n);
+						antI.inputPar.Radiator.fr_predmX.resize((mpoints_size/sizeof(double))/2);
+						antI.inputPar.Radiator.fr_predmY.resize((mpoints_size/sizeof(double))/2);
+						antI.inputPar.Ground.coordX.resize((grd_size / sizeof(double)) / 2);
+						antI.inputPar.Ground.coordY.resize((grd_size / sizeof(double)) / 2);
+						for (int j = 0; j <= fractal_n; ++j)
+						{
+							antI.inputPar.Radiator.fr_pT[j] = points[0 + j * 3];
+							antI.inputPar.Radiator.fr_pX[j] = points[1 + j * 3];
+							antI.inputPar.Radiator.fr_pY[j] = points[2 + j * 3];
+						}
+						for (int j = 0; j < fractal_n; ++j)
+						{
+							antI.inputPar.Radiator.fr_D11[j] = affine[0 + j * 6];
+							antI.inputPar.Radiator.fr_D12[j] = affine[1 + j * 6];
+							antI.inputPar.Radiator.fr_D21[j] = affine[2 + j * 6];
+							antI.inputPar.Radiator.fr_D22[j] = affine[3 + j * 6];
+							antI.inputPar.Radiator.fr_lam[j] = affine[4 + j * 6];
+							antI.inputPar.Radiator.fr_al[j]  = affine[5 + j * 6];
+						}
+						for (size_t j = 0; j < (mpoints_size/sizeof(double))/2; ++j)
+						{
+							antI.inputPar.Radiator.fr_predmX[j] = mpoints[0 + j * 2];
+							antI.inputPar.Radiator.fr_predmY[j] = mpoints[1 + j * 2];
+						}
+						antI.inputPar.Radiator.fr_pred1X = antI.inputPar.Radiator.fr_pX;
+						antI.inputPar.Radiator.fr_pred1Y = antI.inputPar.Radiator.fr_pY;
+						for (size_t j = 0; j < (grd_size / sizeof(double)) / 2; ++j)
+						{
+							antI.inputPar.Ground.coordX[j] = ground[0 + j * 2];
+							antI.inputPar.Ground.coordY[j] = ground[1 + j * 2];
+						} 
+						delete[] с_points;
+						delete[] c_affine;
+						delete[] c_mpoints;
+						delete[] c_ground;
 					}
 					trInputAntennas->Commit();
 				}
@@ -397,617 +434,172 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 					return -1;
 				}
 
-				IBPP::Transaction trPreFr = IBPP::TransactionFactory(*dataBase_);
-				trPreFr->Start();
-				try
-				{
-					double p_x, p_y;
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trPreFr);
-					st->Prepare("select p_x, p_y from INPUT_PREFRACTAL_FIRST_POINTS where ID_INPUT_PARAM = ?");
-					st->Set(1, input_id);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1, p_x);
-						st->Get(2, p_y);
-						antennas[i].inputPar.Radiator.fr_pred1X.push_back(p_x);
-						antennas[i].inputPar.Radiator.fr_pred1Y.push_back(p_y);
-					}
-					trPreFr->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-
-				IBPP::Transaction trPreFrM = IBPP::TransactionFactory(*dataBase_);
-				trPreFrM->Start();
-				try
-				{
-					double p_x, p_y;
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trPreFrM);
-					st->Prepare("select p_x, p_y from INPUT_PREFRACTAL_M_POINTS where ID_INPUT_PARAM = ?");
-					st->Set(1, input_id);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1, p_x);
-						st->Get(2, p_y);
-						antennas[i].inputPar.Radiator.fr_predmX.push_back(p_x);
-						antennas[i].inputPar.Radiator.fr_predmY.push_back(p_y);
-					}
-					trPreFrM->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-
-				IBPP::Transaction trFrP = IBPP::TransactionFactory(*dataBase_);
-				trFrP->Start();
-				try
-				{
-					double p_t, p_x, p_y;
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trFrP);
-					st->Prepare("select p_t, p_x, p_y from INPUT_FRACTAL_POINTS where ID_INPUT_PARAM = ?");
-					st->Set(1, input_id);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1, p_t);
-						st->Get(2, p_x);
-						st->Get(3, p_y);
-						antennas[i].inputPar.Radiator.fr_pT.push_back(p_t);
-						antennas[i].inputPar.Radiator.fr_pX.push_back(p_x);
-						antennas[i].inputPar.Radiator.fr_pY.push_back(p_y);
-					}
-					trFrP->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-
-				IBPP::Transaction trAff = IBPP::TransactionFactory(*dataBase_);
-				trAff->Start();
-				try
-				{
-					double d11, d12, d21, d22, lambda, alfa;
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trAff);
-					st->Prepare("select d11, d12, d21, d22, lambda, alfa from INPUT_FRACTAL_AFFINE_TRANS where ID_INPUT_PARAM = ?");
-					st->Set(1, input_id);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1, d11);
-						st->Get(2, d12);
-						st->Get(3, d21);
-						st->Get(1, d22);
-						st->Get(2, lambda);
-						st->Get(3, alfa);
-						antennas[i].inputPar.Radiator.fr_D11.push_back(d11);
-						antennas[i].inputPar.Radiator.fr_D12.push_back(d12);
-						antennas[i].inputPar.Radiator.fr_D21.push_back(d21);
-						antennas[i].inputPar.Radiator.fr_D22.push_back(d22);
-						antennas[i].inputPar.Radiator.fr_lam.push_back(lambda);
-						antennas[i].inputPar.Radiator.fr_al.push_back(alfa);
-					}
-					trAff->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-
 				//OUTPUT PARAMETERS
-				int output_id;
 				IBPP::Transaction trOutputAntennas = IBPP::TransactionFactory(*dataBase_);
 				trOutputAntennas->Start();
 				try
 				{
-					double fst_s11,   fst_w,   fst_bandwidth;
-					double scnd_s11,  scnd_w,  scnd_bandwidth;
-					double third_s11, third_w, third_bandwidth;
+					int afs, tps, dms;
 					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trOutputAntennas);
-					st->Prepare("select ID, FST_S11, FST_W, FST_BANDWIDTH, SCND_S11, SCND_W, SCND_BANDWIDTH, THIRD_S11, THIRD_W, THIRD_BANDWIDTH from OUTPUT_PARAMS where ID_ANTENNA = ?");
+					st->Prepare("select ALL_FREQ_SIZE, TP_SIZE, DM_SIZE, ALL_FREQ, FST_S11, FST_W, FST_BANDWIDTH, SCND_S11, SCND_W, SCND_BANDWIDTH, THIRD_S11, THIRD_W, THIRD_BANDWIDTH, MU_LENGTHALLSEGMS_M, MU_SURFALLTRI_MM, MU_NUMMETALLICTRI, MU_NUMDIELECTRTRI, MU_NUMAPERTURETRI, MU_NUMGOTRI, MU_NUMWINDSCREENTRI, MU_NUMFEMSURFACETRI, MU_NUMMODALPORTTRI, MU_NUMMETALLICSEGMS, MU_NUMDIEMAGNCUBS, MU_NUMTETRAHEDRA, MU_NUMEDGESPOREGION, MU_NUMWEDGESPOREGION, MU_NUMFOCKREGIONS, MU_NUMPOLYSURFACES, MU_NUMUTDCYLINDRES, MU_NUMMETALLICEDGESMOM, MU_NUMMETALLICEDGESPO, MU_NUMDIELECTRICEDGESMOM, MU_NUMDIELECTRICEDGESPO, MU_NUMAPERTUREEDGESMOM, MU_NUMEDGESFEMMOMSURF, MU_NUMNODESBETWEENSEGMS, MU_NUMCONNECTIONPOINTS, MU_NUMDIELECTRICCUBOIDS, MU_NUMMAGNETICCUBOIDS, MU_NUMBASISFUNCTMOM, MU_NUMBASISFUNCTPO from OUTPUT_PARAMS where ID_ANTENNA = ? ");
 					st->Set(1, antennasID[i]);
 					st->Execute();
 					while (st->Fetch())
 					{
-						st->Get(1, output_id);
-						st->Get(2, fst_s11);
-						st->Get(3, fst_w);
-						st->Get(4, fst_bandwidth);
-						st->Get(5, scnd_s11);
-						st->Get(6, scnd_w);
-						st->Get(7, scnd_bandwidth);
-						st->Get(8, third_s11);
-						st->Get(9, third_w);
-						st->Get(10, third_bandwidth);
+						st->Get(1,  afs);
+						st->Get(2,  tps);
+						st->Get(3,  dms);
+						char * c_freq = GetBinDataFromBlobField(st, 4, afs);
+						double * p_freq = (double *)c_freq;
+						st->Get(5, antI.outputPar.fst_s11);
+						st->Get(6, antI.outputPar.fst_w);
+						st->Get(7, antI.outputPar.fst_bandwidth);
+						st->Get(8, antI.outputPar.scnd_s11);
+						st->Get(9, antI.outputPar.scnd_w);
+						st->Get(10, antI.outputPar.scnd_bandwidth);
+						st->Get(11, antI.outputPar.third_s11);
+						st->Get(12, antI.outputPar.third_w);
+						st->Get(13, antI.outputPar.third_bandwidth);
+						st->Get(14, antI.outputPar._DATA_FOR_MEMORY_USAGE.LengthAllSegms_M);
+						st->Get(15, antI.outputPar._DATA_FOR_MEMORY_USAGE.SurfAllTri_MM);
+						st->Get(16, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicTri);
+						st->Get(17, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectrTri);
+						st->Get(18, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureTri);
+						st->Get(19, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumGoTri);
+						st->Get(20, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumWindscreenTri);
+						st->Get(21, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumFemSurfaceTri);
+						st->Get(22, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumModalPortTri);
+						st->Get(23, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicSegms);
+						st->Get(24, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumDieMagnCubs);
+						st->Get(25, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumTetrahedra);
+						st->Get(26, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesPORegion);
+						st->Get(27, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumWedgesPORegion);
+						st->Get(28, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumFockRegions);
+						st->Get(29, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumPolySurfaces);
+						st->Get(30, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumUTDCylindres);
+						st->Get(31, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesMoM);
+						st->Get(32, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesPO);
+						st->Get(33, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesMoM);
+						st->Get(34, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesPO);
+						st->Get(35, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureEdgesMoM);
+						st->Get(36, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesFEMMomSurf);
+						st->Get(37, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumNodesBetweenSegms);
+						st->Get(38, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumConnectionPoints);
+						st->Get(39, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricCuboids);
+						st->Get(40, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumMagneticCuboids);
+						st->Get(41, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctMoM);
+						st->Get(42, antI.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctPO);
+
+						int count_freq = afs / sizeof(double);
+						int one_frq_size = 53 + 12 * tps + 6 * dms;
+						count_freq /= one_frq_size;
+						antI.outputPar._VEC_DATA_FOR_ONE_FREQ.resize(count_freq);
+
+						for (int j = 0; j < count_freq; ++j)
+						{
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.resize(tps);
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.resize(dms);
+
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency = p_freq[0 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.Wavelength = p_freq[1 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.OpenCircuitVoltage = p_freq[2 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.Phase = p_freq[3 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.ElectricalEdgeLength = p_freq[4 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.SourceSegmLabel = static_cast<int>(p_freq[5 + j*one_frq_size]);
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.AbsolNumSegms = static_cast<int>(p_freq[6 + j*one_frq_size]);
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitX = p_freq[7 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitY = p_freq[8 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitZ = p_freq[9 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirX = p_freq[10 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirY = p_freq[11 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirZ = p_freq[12 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SPortSinc = static_cast<int>(p_freq[13 + j*one_frq_size]);
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SPortSource = static_cast<int>(p_freq[14 + j*one_frq_size]);
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SRealPart = p_freq[15 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SImagPart = p_freq[16 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SMagnitudeLinear = p_freq[17 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SMagnitudeDB = p_freq[18 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SPhase = p_freq[19 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SumS2MagnitudeLinear = p_freq[20 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SumS2MagnitudeDB = p_freq[21 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.S11 = p_freq[22 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.VSWR = p_freq[23 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.EMAX = p_freq[24 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.MetallicElements = p_freq[25 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.MismatchFeed = p_freq[26 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.NonRadiatingNetworks = p_freq[27 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.BackPowerPassWaveguidePorts = p_freq[28 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.BackPowerPassModalPorts = p_freq[29 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.SumAllLosses = p_freq[30 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.EfficiencyTheAntenna = p_freq[31 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.BasedTotalActivePower = p_freq[32 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentRealPart = p_freq[33 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentImagPart = p_freq[34 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentMagnitude = p_freq[35 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentPhase = p_freq[36 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittRealPart = p_freq[37 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittImagPart = p_freq[38 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittMagnitude = p_freq[39 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittPhase = p_freq[40 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceRealPart = p_freq[41 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceImagPart = p_freq[42 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceMagnitude = p_freq[43 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedancePhase = p_freq[44 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.Inductance = p_freq[45 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.Capacitance = p_freq[46 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DATA_OF_THE_VOLTAGE_SOURCE.Power = p_freq[47 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.GainPower = p_freq[48 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss = p_freq[49 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.PowerLoss = p_freq[50 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.MaximumSARValue = p_freq[51 + j*one_frq_size];
+							antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.AveragedSARValue = p_freq[52 + j*one_frq_size];
+							int s = 53 + j*one_frq_size;
+							for (int k = 0; k < tps; ++k)
+							{
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].Tetta             = p_freq[s + 0 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].Phi               = p_freq[s + 1 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].EthetaMagn        = p_freq[s + 2 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].EthetaPhase       = p_freq[s + 3 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].EphiMagn          = p_freq[s + 4 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].EphiPhase         = p_freq[s + 5 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].DirectivityVert   = p_freq[s + 6 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].DirectivityHoriz  = p_freq[s + 7 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].DirectivityTotal  = p_freq[s + 8 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].PolarizationAxial = p_freq[s + 9 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].PolarizationAngle = p_freq[s + 10 + k * 12];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[k].Gain              = p_freq[s + 11 + k * 12];
+							}
+							s = 53 + 12 * tps;
+							for (int k = 0; k < dms; ++k)
+							{
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA[k].RelPermittivity  = p_freq[s + 0 + k * 6];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA[k].RelPermeability  = p_freq[s + 1 + k * 6];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA[k].Conductivity     = p_freq[s + 2 + k * 6];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA[k].TanDeltaElectric = p_freq[s + 3 + k * 6];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA[k].TanDeltaMagnetic = p_freq[s + 4 + k * 6];
+								antI.outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA[k].MassDensity      = p_freq[s + 5 + k * 6];
+							}
+						}
+
+						delete[] c_freq;
 						
-						antennas[i].outputPar.fst_s11 = fst_s11;
-						antennas[i].outputPar.fst_w = fst_w;
-						antennas[i].outputPar.fst_bandwidth = fst_bandwidth;
-						antennas[i].outputPar.scnd_s11 = scnd_s11;
-						antennas[i].outputPar.scnd_w = scnd_w;
-						antennas[i].outputPar.scnd_bandwidth = scnd_bandwidth;
-						antennas[i].outputPar.third_s11 = third_s11;
-						antennas[i].outputPar.third_w = third_w;
-						antennas[i].outputPar.third_bandwidth = third_bandwidth;
-						
-						antennas[i].outputPar.findDATA_FOR_MEMORY_USAGE = false;
-						antennas[i].outputPar.findDATA_FOR_DIELECTRIC_MEDIA = false;
-						antennas[i].outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS = false;
-						antennas[i].outputPar.findEXCITATION_BY_VOLTAGE_SOURCE = false;
-						//antennas[i].outputPar.findDISTRIBUTED_STORAGE_OF_MATRIX = false;
-						antennas[i].outputPar.findDATA_OF_THE_VOLTAGE_SOURCE = false;
-						antennas[i].outputPar.findSCATTERING_PARAMETERS = false;
-						antennas[i].outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS = false;
-						antennas[i].outputPar.findSUMMARY_OF_LOSSES = false;
-						antennas[i].outputPar.findDIRECTIVITY_PATTERN_THETA_PHI = false;
-						antennas[i].outputPar.findDIRECTIVITY_PATTERN_PARAMS = false;
+						antI.outputPar.findDATA_FOR_MEMORY_USAGE = false;
+						antI.outputPar.findDATA_FOR_DIELECTRIC_MEDIA = false;
+						antI.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS = false;
+						antI.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE = false;
+						//antI.outputPar.findDISTRIBUTED_STORAGE_OF_MATRIX = false;
+						antI.outputPar.findDATA_OF_THE_VOLTAGE_SOURCE = false;
+						antI.outputPar.findSCATTERING_PARAMETERS = false;
+						antI.outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS = false;
+						antI.outputPar.findSUMMARY_OF_LOSSES = false;
+						antI.outputPar.findDIRECTIVITY_PATTERN_THETA_PHI = false;
+						antI.outputPar.findDIRECTIVITY_PATTERN_PARAMS = false;
 					}
 					trOutputAntennas->Commit();
 				}
 				catch (...)
 				{
 					return -1;
-				}
-
-				//DATA_FOR_MEMORY_USAGE
-				IBPP::Transaction trMemoryUsage = IBPP::TransactionFactory(*dataBase_);
-				trMemoryUsage->Start();
-				try
-				{
-					double LengthAllSegms_M, SurfAllTri_MM;
-					int NumMetallicTri, NumDielectrTri, NumApertureTri, NumGoTri, NumWindscreenTri, NumFemSurfaceTri, NumModalPortTri, NumMetallicSegms, NumDieMagnCubs, NumTetrahedra, NumEdgesPORegion, NumWedgesPORegion, NumFockRegions, NumPolySurfaces, NumUTDCylindres, NumMetallicEdgesMoM, NumMetallicEdgesPO, NumDielectricEdgesMoM, NumDielectricEdgesPO, NumApertureEdgesMoM, NumEdgesFEMMomSurf, NumNodesBetweenSegms, NumConnectionPoints, NumDielectricCuboids, NumMagneticCuboids, NumBasisFunctMoM, NumBasisFunctPO;
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trMemoryUsage);
-					st->Prepare("select LENGTHALLSEGMS_M, SURFALLTRI_MM, NUMMETALLICTRI, NUMDIELECTRTRI, NUMAPERTURETRI, NUMGOTRI, NUMWINDSCREENTRI, NUMFEMSURFACETRI, NUMMODALPORTTRI, NUMMETALLICSEGMS, NUMDIEMAGNCUBS, NUMTETRAHEDRA, NUMEDGESPOREGION, NUMWEDGESPOREGION, NUMFOCKREGIONS, NUMPOLYSURFACES, NUMUTDCYLINDRES, NUMMETALLICEDGESMOM, NUMMETALLICEDGESPO, NUMDIELECTRICEDGESMOM, NUMDIELECTRICEDGESPO, NUMAPERTUREEDGESMOM, NUMEDGESFEMMOMSURF, NUMNODESBETWEENSEGMS, NUMCONNECTIONPOINTS, NUMDIELECTRICCUBOIDS, NUMMAGNETICCUBOIDS, NUMBASISFUNCTMOM, NUMBASISFUNCTPO from DATA_FOR_MEMORY_USAGE where ID_OUTPUT_PARAM = ?");
-					st->Set(1, output_id);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1,  LengthAllSegms_M);
-						st->Get(2,  SurfAllTri_MM);
-						st->Get(3,  NumMetallicTri);
-						st->Get(4,  NumDielectrTri);
-						st->Get(5,  NumApertureTri);
-						st->Get(6,  NumGoTri);
-						st->Get(7,  NumWindscreenTri);
-						st->Get(8,  NumFemSurfaceTri);
-						st->Get(9,  NumModalPortTri);
-						st->Get(10, NumMetallicSegms);
-						st->Get(11, NumDieMagnCubs);
-						st->Get(12, NumTetrahedra);
-						st->Get(13, NumEdgesPORegion);
-						st->Get(14, NumWedgesPORegion);
-						st->Get(15, NumFockRegions);
-						st->Get(16, NumPolySurfaces);
-						st->Get(17, NumUTDCylindres);
-						st->Get(18, NumMetallicEdgesMoM);
-						st->Get(19, NumMetallicEdgesPO);
-						st->Get(20, NumDielectricEdgesMoM);
-						st->Get(21, NumDielectricEdgesPO);
-						st->Get(22, NumApertureEdgesMoM);
-						st->Get(23, NumEdgesFEMMomSurf);
-						st->Get(24, NumNodesBetweenSegms);
-						st->Get(25, NumConnectionPoints);
-						st->Get(26, NumDielectricCuboids);
-						st->Get(27, NumMagneticCuboids);
-						st->Get(28, NumBasisFunctMoM);
-						st->Get(29, NumBasisFunctPO);
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.LengthAllSegms_M = LengthAllSegms_M;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.SurfAllTri_MM = SurfAllTri_MM;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicTri = NumMetallicTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumDielectrTri = NumDielectrTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumApertureTri = NumApertureTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumGoTri = NumGoTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumWindscreenTri = NumWindscreenTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumFemSurfaceTri = NumFemSurfaceTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumModalPortTri = NumModalPortTri;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicSegms = NumMetallicSegms;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumDieMagnCubs = NumDieMagnCubs;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumTetrahedra = NumTetrahedra;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesPORegion = NumEdgesPORegion;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumWedgesPORegion = NumWedgesPORegion;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumFockRegions = NumFockRegions;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumPolySurfaces = NumPolySurfaces;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumUTDCylindres = NumUTDCylindres;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesMoM = NumMetallicEdgesMoM;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesPO = NumMetallicEdgesPO;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesMoM = NumDielectricEdgesMoM;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesPO = NumDielectricEdgesPO;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumApertureEdgesMoM = NumApertureEdgesMoM;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesFEMMomSurf = NumEdgesFEMMomSurf;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumNodesBetweenSegms = NumNodesBetweenSegms;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumConnectionPoints = NumConnectionPoints;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricCuboids = NumDielectricCuboids;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumMagneticCuboids = NumMagneticCuboids;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctMoM = NumBasisFunctMoM;
-						antennas[i].outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctPO = NumBasisFunctPO;
-						antennas[i].outputPar.findDATA_FOR_MEMORY_USAGE = true;
-					}
-					trMemoryUsage->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-
-				std::vector<int> output1freq_id;
-				IBPP::Transaction trOutput1FreqAntennas = IBPP::TransactionFactory(*dataBase_);
-				trOutput1FreqAntennas->Start();
-				try
-				{
-					int out1fr;
-					double Frequency;
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trOutput1FreqAntennas);
-					st->Prepare("select ID, Frequency from OUTPUT_PARAMS_FOR_ONE_FREQ where ID_OUTPUT_PARAM = ?");
-					st->Set(1, output_id);
-					st->Execute();
-					while (st->Fetch())
-					{
-						st->Get(1, out1fr);
-						st->Get(2, Frequency);
-						output1freq_id.push_back(out1fr);
-						DATA_FOR_ONE_FREQ df1f;
-						df1f._VEC_EXCITATION_BY_VOLTAGE_SOURCE.resize(1);
-						antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ.push_back(df1f);
-						antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ.back()._VEC_EXCITATION_BY_VOLTAGE_SOURCE[0].Frequency = Frequency;
-					}
-					trOutput1FreqAntennas->Commit();
-				}
-				catch (...)
-				{
-					return -1;
-				}
-
-				for (size_t j = 0; j < output1freq_id.size(); ++j)
-				{
-					IBPP::Transaction trScat = IBPP::TransactionFactory(*dataBase_);
-					trScat->Start();
-					try
-					{
-						int SPortSinc, SPortSource;
-						double SRealPart, SImagPart, SMagnitudeLinear, SMagnitudeDB, SPhase, SumS2MagnitudeLinear, SumS2MagnitudeDB, S11, VSWR, EMAX;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trScat);
-						st->Prepare("select SPORTSINC, SPORTSOURCE, SREALPART, SIMAGPART, SMAGNITUDELINEAR, SMAGNITUDEDB, SPHASE, SUMS2MAGNITUDELINEAR, SUMS2MAGNITUDEDB, S11, VSWR, EMAX from SCATTERING_PARAMETERS where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, SPortSinc);
-							st->Get(2, SPortSource);
-							st->Get(3, SRealPart);
-							st->Get(4, SImagPart);
-							st->Get(5, SMagnitudeLinear);
-							st->Get(6, SMagnitudeDB);
-							st->Get(7, SPhase);
-							st->Get(8, SumS2MagnitudeLinear);
-							st->Get(9, SumS2MagnitudeDB);
-							st->Get(10, S11);
-							st->Get(11, VSWR);
-							st->Get(12, EMAX);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SPortSinc = SPortSinc;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SPortSource = SPortSource;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SRealPart = SRealPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SImagPart = SImagPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SMagnitudeLinear = SMagnitudeLinear;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SMagnitudeDB = SMagnitudeDB;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SPhase = SPhase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SumS2MagnitudeLinear = SumS2MagnitudeLinear;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.SumS2MagnitudeDB = SumS2MagnitudeDB;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.S11 = S11;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.VSWR = VSWR;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SCATTERING_PARAMETERS.EMAX = EMAX;
-							antennas[i].outputPar.findSCATTERING_PARAMETERS = true;
-						}
-						trScat->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trDirPP = IBPP::TransactionFactory(*dataBase_);
-					trDirPP->Start();
-					try
-					{
-						double GainPower, GainPowerLoss, DTheta, DPhi, PolarHorizWatt, PolarHorizPers, PolarVertWatt, PolarVertPers, PolarSWatt, PolarSPers, PolarZWatt, PolarZPers, PolarLeftHandWatt, PolarLeftHandPers, PolarRightHandWatt, PolarRightHandPers;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trDirPP);
-						st->Prepare("select GAINPOWER, GAINPOWERLOSS, DTHETA, DPHI, POLARHORIZWATT, POLARHORIZPERS, POLARVERTWATT, POLARVERTPERS, POLARSWATT, POLARSPERS, POLARZWATT, POLARZPERS, POLARLEFTHANDWATT, POLARLEFTHANDPERS, POLARRIGHTHANDWATT, POLARRIGHTHANDPERS from DIRECTIVITY_PATTERN_PARAMS where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, GainPower);
-							st->Get(2, GainPowerLoss);
-							st->Get(3, DTheta);
-							st->Get(4, DPhi);
-							st->Get(5, PolarHorizWatt);
-							st->Get(6, PolarHorizPers);
-							st->Get(7, PolarVertWatt);
-							st->Get(8, PolarVertPers);
-							st->Get(9, PolarSWatt);
-							st->Get(10, PolarSPers);
-							st->Get(11, PolarZWatt);
-							st->Get(12, PolarZPers);
-							st->Get(13, PolarLeftHandWatt);
-							st->Get(14, PolarLeftHandPers);
-							st->Get(15, PolarRightHandWatt);
-							st->Get(16, PolarRightHandPers);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.GainPower = GainPower;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss = GainPowerLoss;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.DTheta = DTheta;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.DPhi = DPhi;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarHorizWatt = PolarHorizWatt;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarHorizPers = PolarHorizPers;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarVertWatt =	PolarVertWatt;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarVertPers =	PolarVertPers;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarSWatt = PolarSWatt;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarSPers = PolarSPers;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarZWatt = PolarZWatt;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarZPers = PolarZPers;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandWatt = PolarLeftHandWatt;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandPers = PolarLeftHandPers;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandWatt = PolarRightHandWatt;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandPers = PolarRightHandPers;
-							antennas[i].outputPar.findDIRECTIVITY_PATTERN_PARAMS = true;
-						}
-						trDirPP->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trSumLos = IBPP::TransactionFactory(*dataBase_);
-					trSumLos->Start();
-					try
-					{
-						double MetallicElements, MismatchFeed, NonRadiatingNetworks, BackPowerPassWaveguidePorts, BackPowerPassModalPorts, SumAllLosses, EfficiencyTheAntenna, BasedTotalActivePower;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trSumLos);
-						st->Prepare("select METALLICELEMENTS, MISMATCHFEED, NONRADIATINGNETWORKS, BACKPOWERPASSWAVEGUIDEPORTS, BACKPOWERPASSMODALPORTS, SUMALLLOSSES, EFFICIENCYTHEANTENNA, BASEDTOTALACTIVEPOWER from SUMMARY_OF_LOSSES where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, MetallicElements);
-							st->Get(2, MismatchFeed);
-							st->Get(3, NonRadiatingNetworks);
-							st->Get(4, BackPowerPassWaveguidePorts);
-							st->Get(5, BackPowerPassModalPorts);
-							st->Get(6, SumAllLosses);
-							st->Get(7, EfficiencyTheAntenna);
-							st->Get(8, BasedTotalActivePower);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.MetallicElements = MetallicElements;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.MismatchFeed = MismatchFeed;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.NonRadiatingNetworks = NonRadiatingNetworks;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.BackPowerPassWaveguidePorts = BackPowerPassWaveguidePorts;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.BackPowerPassModalPorts = BackPowerPassModalPorts;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.SumAllLosses = SumAllLosses;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.EfficiencyTheAntenna = EfficiencyTheAntenna;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._SUMMARY_OF_LOSSES.BasedTotalActivePower = BasedTotalActivePower;
-							antennas[i].outputPar.findSUMMARY_OF_LOSSES = true;
-						}
-						trSumLos->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trLosDEl = IBPP::TransactionFactory(*dataBase_);
-					trLosDEl->Start();
-					try
-					{
-						double PowerLoss, MaximumSARValue, AveragedSARValue;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trLosDEl);
-						st->Prepare("select POWERLOSS, MAXIMUMSARVALUE, AVERAGEDSARVALUE from LOSSES_IN_DIELECTRIC_VOLUME_ELE where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, PowerLoss);
-							st->Get(2, MaximumSARValue);
-							st->Get(3, AveragedSARValue);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.PowerLoss = PowerLoss;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.MaximumSARValue = MaximumSARValue;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.AveragedSARValue = AveragedSARValue;
-							antennas[i].outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS = true;
-						}
-						trLosDEl->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trDieM = IBPP::TransactionFactory(*dataBase_);
-					trDieM->Start();
-					try
-					{
-						int    InternalIndex;
-						double RelPermittivity, RelPermeability, Conductivity, TanDeltaElectric, TanDeltaMagnetic, MassDensity;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trDieM);
-						st->Prepare("select INTERNALINDEX, RELPERMITTIVITY, RELPERMEABILITY, CONDUCTIVITY, TANDELTAELECTRIC, TANDELTAMAGNETIC, MASSDENSITY from DATA_FOR_DIELECTRIC_MEDIA where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, InternalIndex);
-							st->Get(2, RelPermittivity);
-							st->Get(3, RelPermeability);
-							st->Get(4, Conductivity);
-							st->Get(5, TanDeltaElectric);
-							st->Get(6, TanDeltaMagnetic);
-							st->Get(7, MassDensity);
-							DATA_FOR_DIELECTRIC_MEDIA dgdm;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.push_back(dgdm);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().InternalIndex = InternalIndex;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().RelPermittivity = RelPermittivity;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().RelPermeability = RelPermeability;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().Conductivity = Conductivity;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().TanDeltaElectric = TanDeltaElectric;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().TanDeltaMagnetic = TanDeltaMagnetic;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_FOR_DIELECTRIC_MEDIA.back().MassDensity = MassDensity;
-							antennas[i].outputPar.findDATA_FOR_DIELECTRIC_MEDIA = true;
-						}
-						trDieM->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trExByVS = IBPP::TransactionFactory(*dataBase_);
-					trExByVS->Start();
-					try
-					{
-						int    ExcitationIndex, SourceSegmLabel, AbsolNumSegms;
-						double Frequency, Wavelength, OpenCircuitVoltage, Phase, ElectricalEdgeLength, LocationExcitX, LocationExcitY, LocationExcitZ, PositiveFeedDirX, PositiveFeedDirY, PositiveFeedDirZ;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExByVS);
-						st->Prepare("select EXCITATIONINDEX, FREQUENCY, WAVELENGTH, OPENCIRCUITVOLTAGE, PHASE, ELECTRICALEDGELENGTH, SOURCESEGMLABEL, ABSOLNUMSEGMS, LOCATIONEXCITX, LOCATIONEXCITY, LOCATIONEXCITZ, POSITIVEFEEDDIRX, POSITIVEFEEDDIRY, POSITIVEFEEDDIRZ from EXCITATION_BY_VOLTAGE_SOURCE where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, ExcitationIndex);
-							st->Get(2, Frequency);
-							st->Get(3, Wavelength);
-							st->Get(4, OpenCircuitVoltage);
-							st->Get(5, Phase);
-							st->Get(6, ElectricalEdgeLength);
-							st->Get(7, SourceSegmLabel);
-							st->Get(8, AbsolNumSegms);
-							st->Get(9, LocationExcitX);
-							st->Get(10, LocationExcitY);
-							st->Get(11, LocationExcitZ);
-							st->Get(12, PositiveFeedDirX);
-							st->Get(13, PositiveFeedDirY);
-							st->Get(14, PositiveFeedDirZ);
-							EXCITATION_BY_VOLTAGE_SOURCE ebvs;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.push_back(ebvs);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().ExcitationIndex = ExcitationIndex;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().Frequency = Frequency;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().Wavelength = Wavelength;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().OpenCircuitVoltage = OpenCircuitVoltage;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().Phase = Phase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().ElectricalEdgeLength = ElectricalEdgeLength;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().SourceSegmLabel = SourceSegmLabel;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().AbsolNumSegms = AbsolNumSegms;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().LocationExcitX = LocationExcitX;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().LocationExcitY = LocationExcitY;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().LocationExcitZ = LocationExcitZ;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().PositiveFeedDirX = PositiveFeedDirX;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().PositiveFeedDirY = PositiveFeedDirY;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.back().PositiveFeedDirZ = PositiveFeedDirZ;
-							antennas[i].outputPar.findEXCITATION_BY_VOLTAGE_SOURCE = true;
-						}
-						trExByVS->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trDOTVS = IBPP::TransactionFactory(*dataBase_);
-					trDOTVS->Start();
-					try
-					{
-						double CurrentRealPart, CurrentImagPart, CurrentMagnitude, CurrentPhase, AdmittRealPart, AdmittImagPart, AdmittMagnitude, AdmittPhase, ImpedanceRealPart, ImpedanceImagPart, ImpedanceMagnitude, ImpedancePhase, Inductance, Capacitance, Power;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trDOTVS);
-						st->Prepare("select CURRENTREALPART, CURRENTIMAGPART, CURRENTMAGNITUDE, CURRENTPHASE, ADMITTREALPART, ADMITTIMAGPART, ADMITTMAGNITUDE, ADMITTPHASE, IMPEDANCEREALPART, IMPEDANCEIMAGPART, IMPEDANCEMAGNITUDE, IMPEDANCEPHASE, INDUCTANCE, CAPACITANCE, POWER from DATA_OF_THE_VOLTAGE_SOURCE where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, CurrentRealPart);
-							st->Get(2, CurrentImagPart);
-							st->Get(3, CurrentMagnitude);
-							st->Get(4, CurrentPhase);
-							st->Get(5, AdmittRealPart);
-							st->Get(6, AdmittImagPart);
-							st->Get(7, AdmittMagnitude);
-							st->Get(8, AdmittPhase);
-							st->Get(9, ImpedanceRealPart);
-							st->Get(10, ImpedanceImagPart);
-							st->Get(11, ImpedanceMagnitude);
-							st->Get(12, ImpedancePhase);
-							st->Get(13, Inductance);
-							st->Get(14, Capacitance);
-							st->Get(15, Power);
-							DATA_OF_THE_VOLTAGE_SOURCE dotvs;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.push_back(dotvs);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().CurrentRealPart = CurrentRealPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().CurrentImagPart = CurrentImagPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().CurrentMagnitude = CurrentMagnitude;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().CurrentPhase = CurrentPhase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().AdmittRealPart = AdmittRealPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().AdmittImagPart = AdmittImagPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().AdmittMagnitude = AdmittMagnitude;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().AdmittPhase = AdmittPhase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().ImpedanceRealPart = ImpedanceRealPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().ImpedanceImagPart = ImpedanceImagPart;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().ImpedanceMagnitude = ImpedanceMagnitude;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().ImpedancePhase = ImpedancePhase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().Inductance = Inductance;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().Capacitance = Capacitance;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.back().Power = Power;
-							antennas[i].outputPar.findDATA_OF_THE_VOLTAGE_SOURCE = true;
-						}
-						trDOTVS->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
-
-					IBPP::Transaction trDPTP = IBPP::TransactionFactory(*dataBase_);
-					trDPTP->Start();
-					try
-					{
-						double Tetta, Phi, EthetaMagn, EthetaPhase, EphiMagn, EphiPhase, DirectivityVert, DirectivityHoriz, DirectivityTotal, PolarizationAxial, PolarizationAngle, Gain;
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trDPTP);
-						st->Prepare("select TETTA, PHI, ETHETAMAGN, ETHETAPHASE, EPHIMAGN, EPHIPHASE, DIRECTIVITYVERT, DIRECTIVITYHORIZ, DIRECTIVITYTOTAL, POLARIZATIONAXIAL, POLARIZATIONANGLE, GAIN from DIRECTIVITY_PATTERN_THETA_PHI where ID_OUTPUT = ?");
-						st->Set(1, output1freq_id[j]);
-						st->Execute();
-						while (st->Fetch())
-						{
-							st->Get(1, Tetta);
-							st->Get(2, Phi);
-							st->Get(3, EthetaMagn);
-							st->Get(4, EthetaPhase);
-							st->Get(5, EphiMagn);
-							st->Get(6, EphiPhase);
-							st->Get(7, DirectivityVert);
-							st->Get(8, DirectivityHoriz);
-							st->Get(9, DirectivityTotal);
-							st->Get(10, PolarizationAxial);
-							st->Get(11, PolarizationAngle);
-							st->Get(12, Gain);
-							DIRECTIVITY_PATTERN_THETA_PHI dptp;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.push_back(dptp);
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().Tetta = Tetta;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().Phi = Phi;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().EthetaMagn = EthetaMagn;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().EthetaPhase = EthetaPhase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().EphiMagn = EphiMagn;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().EphiPhase = EphiPhase;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().DirectivityVert = DirectivityVert;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().DirectivityHoriz = DirectivityHoriz;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().DirectivityTotal = DirectivityTotal;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().PolarizationAxial = PolarizationAxial;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().PolarizationAngle = PolarizationAngle;
-							antennas[i].outputPar._VEC_DATA_FOR_ONE_FREQ[j]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.back().Gain = Gain;
-							antennas[i].outputPar.findDIRECTIVITY_PATTERN_THETA_PHI = true;
-						}
-						trDPTP->Commit();
-					}
-					catch (...)
-					{
-						return -1;
-					}
 				}
 			}
 		}
@@ -1017,8 +609,6 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 		return -1;
 	}
 	return 0;
-
-
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1033,44 +623,45 @@ int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 			trExperiment->Start();
 			try
 			{
+				std::string s_params;
+				for (size_t i = 0; i < pExperiment->cycles.size(); ++i)
+				{
+					s_params += pExperiment->cycles[i].name;
+					s_params += " ";
+					std::ostringstream strs;
+					strs << pExperiment->cycles[i].pBegin;
+					strs << " ";
+					strs << pExperiment->cycles[i].pEnd;
+					strs << " ";
+					strs << pExperiment->cycles[i].pStep;
+					strs << " ";
+					s_params += strs.str();
+					s_params += " ";
+				}
+
+				char * c_params = new char[s_params.size()];
+				for (size_t i = 0; i < s_params.size(); ++i)
+				{
+					c_params[i] = s_params[i];
+				}
+
 				IBPP::Date dt;
 				dt.SetDate(pExperiment->date.tm_year, pExperiment->date.tm_mon, pExperiment->date.tm_mday);
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExperiment);
-				st->Prepare("insert into EXPERIMENT (WRITEN_DATE, COMMENT) values (?, ?) returning id");
+				st->Prepare("insert into EXPERIMENT (WRITEN_DATE, COMMENT, PARAMS, PARAMS_SIZE) values (?, ?, ?, ?) returning id");
 				st->Set(1, dt);
 				st->Set(2, pExperiment->comment);
+				WriteBinDataToBlobField(st, 3, c_params, s_params.size());
+				st->Set(4, (int)s_params.size());
 				st->Execute();
 				st->Get(1, idExperiment);
 				trExperiment->Commit();
+
+				delete[] c_params;
 			}
 			catch (...)
 			{
 				trExperiment->Rollback();
-			}
-		}
-
-		{
-			if (idExperiment > 0)
-			for (size_t i=0; i<pExperiment->cycles.size(); ++i)
-			{
-				IBPP::Transaction trExperimentP = IBPP::TransactionFactory(*dataBase_);
-				trExperimentP->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExperimentP);
-					st->Prepare("insert into experiment_param (ID_EXPERIMENT, exp_name, exp_begin, exp_end, exp_step) values (?, ?, ?, ?, ?)");
-					st->Set(1, idExperiment);
-					st->Set(2, pExperiment->cycles[i].name);
-					st->Set(3, pExperiment->cycles[i].pBegin);
-					st->Set(4, pExperiment->cycles[i].pEnd);
-					st->Set(5, pExperiment->cycles[i].pStep);
-					st->Execute();
-					trExperimentP->Commit();
-				}
-				catch (...)
-				{
-					trExperimentP->Rollback();
-				}
 			}
 		}
 	}
@@ -1081,7 +672,7 @@ int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 /// @details Запись антенны в базу данных
 int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 {
-	//clock_t tStart;
+	//clock_t tStart;// , tStep;
 
 	int idAntenna          = -1;
 	int idOutputPar        = -1; 
@@ -1112,19 +703,72 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 		}
 
 		//tStart = clock();
+		int size_fp = sizeof(double) * (_antenna.inputPar.Radiator.fr_N + 1) * 3;
+		double * p_fp = new double[(_antenna.inputPar.Radiator.fr_N + 1) * 3];
+		int size_at = sizeof(double) * _antenna.inputPar.Radiator.fr_N * 6;
+		double * p_at = new double[_antenna.inputPar.Radiator.fr_N * 6];
+		int size_fmp = sizeof(double) * _antenna.inputPar.Radiator.fr_predmX.size() * 2;
+		double * p_fmp = new double[_antenna.inputPar.Radiator.fr_predmX.size() * 2];
+		int size_grd = sizeof(double) * _antenna.inputPar.Ground.coordX.size() * 2;
+		double * p_grd = new double[_antenna.inputPar.Ground.coordX.size() * 2];
+		for (int j = 0; j <= _antenna.inputPar.Radiator.fr_N; ++j)
+		{
+			p_fp[0 + j * 3] = _antenna.inputPar.Radiator.fr_pT[j];
+			p_fp[1 + j * 3] = _antenna.inputPar.Radiator.fr_pX[j];
+			p_fp[2 + j * 3] = _antenna.inputPar.Radiator.fr_pY[j];
+		}
+		for (int j = 0; j < _antenna.inputPar.Radiator.fr_N; ++j)
+		{
+			p_at[0 + j * 6] = _antenna.inputPar.Radiator.fr_D11[j];
+			p_at[1 + j * 6] = _antenna.inputPar.Radiator.fr_D12[j];
+			p_at[2 + j * 6] = _antenna.inputPar.Radiator.fr_D21[j];
+			p_at[3 + j * 6] = _antenna.inputPar.Radiator.fr_D22[j];
+			p_at[4 + j * 6] = _antenna.inputPar.Radiator.fr_lam[j];
+			p_at[5 + j * 6] = _antenna.inputPar.Radiator.fr_al[j];
+		}
+		for (size_t j = 0; j < _antenna.inputPar.Radiator.fr_predmX.size(); ++j)
+		{
+			p_fmp[0 + j * 2] = _antenna.inputPar.Radiator.fr_pred1X[j];
+			p_fmp[1 + j * 2] = _antenna.inputPar.Radiator.fr_pred1Y[j];
+		}
+		for (size_t j = 0; j < _antenna.inputPar.Ground.coordX.size(); ++j)
+		{
+			p_grd[0 + j * 2] = _antenna.inputPar.Ground.coordX[j];
+			p_grd[1 + j * 2] = _antenna.inputPar.Ground.coordY[j];
+		}
+		char * cp_fp = (char *)p_fp;
+		char * cp_at = (char *)p_at;
+		char * cp_fmp = (char *)p_fmp;
+		char * cp_grd = (char *)p_grd;
 		{
 			IBPP::Transaction trInput = IBPP::TransactionFactory(*dataBase_);
 			trInput->Start();
 			try
 			{
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInput);
-				st->Prepare("insert into INPUT_PARAMS (ID_ANTENNA, SCALEX, SCALEY, RADIUS, FRACTAL_N, FRACTAL_M) values (?, ?, ?, ?, ?, ?) returning id");
+				st->Prepare("insert into INPUT_PARAMS (ID_ANTENNA, SCALEX, SCALEY, RADIUS, FRACTAL_N, FRACTAL_M, POINTS, AFFINE, MPOINTS, MPOINTS_SIZE, FEED_X, FEED_Y, S_PERMITTIVITY, S_LOSSTANGENT, S_DENSITY, S_THICKNESS, S_COORLEFTUPX, S_COORLEFTUPY, S_COORRIGHTDOWNX, S_COORRIGHTDOWNY, GROUND_SIZE, GROUND) values(?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?) returning id");
 				st->Set(1, idAntenna);
 				st->Set(2, _antenna.inputPar.Radiator.ScaleX);
 				st->Set(3, _antenna.inputPar.Radiator.ScaleY);
 				st->Set(4, _antenna.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
 				st->Set(5, _antenna.inputPar.Radiator.fr_N);
 				st->Set(6, _antenna.inputPar.Radiator.fr_m);
+				WriteBinDataToBlobField(st, 7, cp_fp, size_fp);
+				WriteBinDataToBlobField(st, 8, cp_at, size_at);
+				WriteBinDataToBlobField(st, 9, cp_fmp, size_fmp);
+				st->Set(10, size_fmp);
+				st->Set(11, _antenna.inputPar.Feed.FeedX);
+				st->Set(12, _antenna.inputPar.Feed.FeedY);
+				st->Set(13, _antenna.inputPar.Substrate.Permittivity);
+				st->Set(14, _antenna.inputPar.Substrate.LossTangent);
+				st->Set(15, _antenna.inputPar.Substrate.Density);
+				st->Set(16, _antenna.inputPar.Substrate.Thickness);
+				st->Set(17, _antenna.inputPar.Substrate.CoorLeftUpX);
+				st->Set(18, _antenna.inputPar.Substrate.CoorLeftUpY);
+				st->Set(19, _antenna.inputPar.Substrate.CoorRightDownX);
+				st->Set(20, _antenna.inputPar.Substrate.CoorRightDownY);
+				st->Set(21, size_grd);
+				WriteBinDataToBlobField(st, 22, cp_grd, size_grd);
 				st->Execute();
 				st->Get(1, idInputPar);
 				trInput->Commit();
@@ -1136,117 +780,152 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 			}
 		}
 
-		{
-			for (size_t i=0; i<_antenna.inputPar.Radiator.fr_D11.size(); ++i)
-			{
-				IBPP::Transaction trInputFractalAff = IBPP::TransactionFactory(*dataBase_);
-				trInputFractalAff->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInputFractalAff);
-					st->Prepare("insert into INPUT_FRACTAL_AFFINE_TRANS (ID_INPUT_PARAM, D11, D12, D21, D22, LAMBDA, ALFA) values (?, ?, ?, ?, ?, ?, ?)");
-					st->Set(1, idInputPar);
-					st->Set(2, _antenna.inputPar.Radiator.fr_D11[i]);
-					st->Set(3, _antenna.inputPar.Radiator.fr_D12[i]);
-					st->Set(4, _antenna.inputPar.Radiator.fr_D21[i]);
-					st->Set(5, _antenna.inputPar.Radiator.fr_D22[i]);
-					st->Set(6, _antenna.inputPar.Radiator.fr_lam[i]);
-					st->Set(7, _antenna.inputPar.Radiator.fr_al[i]);
-					st->Execute();
-					trInputFractalAff->Commit();
-				}
-				catch (...)
-				{
-					trInputFractalAff->Rollback();
-				}
-			}
-		}
+		delete[] p_fp;
+		delete[] p_at;
+		delete[] p_fmp;
+		delete[] p_grd;
 
-		{
-			for (size_t i=0; i<_antenna.inputPar.Radiator.fr_pT.size(); ++i)
-			{
-				IBPP::Transaction trInputFractalPoints = IBPP::TransactionFactory(*dataBase_);
-				trInputFractalPoints->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInputFractalPoints);
-					st->Prepare("insert into INPUT_FRACTAL_POINTS (ID_INPUT_PARAM, P_T, P_X, P_Y) values (?, ?, ?, ?)");
-					st->Set(1, idInputPar);
-					st->Set(2, _antenna.inputPar.Radiator.fr_pT[i]);
-					st->Set(3, _antenna.inputPar.Radiator.fr_pX[i]);
-					st->Set(4, _antenna.inputPar.Radiator.fr_pY[i]);
-					st->Execute();
-					trInputFractalPoints->Commit();
-				}
-				catch (...)
-				{
-					trInputFractalPoints->Rollback();
-				}
-			}
-		}
-
-		{
-			for (size_t i=0; i<_antenna.inputPar.Radiator.fr_pred1X.size(); ++i)
-			{
-				IBPP::Transaction trInput1PreFractalPoints = IBPP::TransactionFactory(*dataBase_);
-				trInput1PreFractalPoints->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInput1PreFractalPoints);
-					st->Prepare("insert into INPUT_PREFRACTAL_FIRST_POINTS (ID_INPUT_PARAM, P_X, P_Y) values (?, ?, ?)");
-					st->Set(1, idInputPar);
-					st->Set(2, _antenna.inputPar.Radiator.fr_pred1X[i]);
-					st->Set(3, _antenna.inputPar.Radiator.fr_pred1Y[i]);
-					st->Execute();
-					trInput1PreFractalPoints->Commit();
-				}
-				catch (...)
-				{
-					trInput1PreFractalPoints->Rollback();
-				}
-			}
-		}
-
-		{
-			for (size_t i=0; i<_antenna.inputPar.Radiator.fr_predmX.size(); ++i)
-			{
-				IBPP::Transaction trInput1PreFractalPoints = IBPP::TransactionFactory(*dataBase_);
-				trInput1PreFractalPoints->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInput1PreFractalPoints);
-					st->Prepare("insert into INPUT_PREFRACTAL_M_POINTS (ID_INPUT_PARAM, P_X, P_Y) values (?, ?, ?)");
-					st->Set(1, idInputPar);
-					st->Set(2, _antenna.inputPar.Radiator.fr_predmX[i]);
-					st->Set(3, _antenna.inputPar.Radiator.fr_predmY[i]);
-					st->Execute();
-					trInput1PreFractalPoints->Commit();
-				}
-				catch (...)
-				{
-					trInput1PreFractalPoints->Rollback();
-				}
-			}
-		}
-		//cout << "input: " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
+		//std::cout << "input: " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
 		//tStart = clock();
 		{
+			int one_frq_size = 53 + (_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[0]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.size() * 12) + _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[0]._VEC_DATA_FOR_DIELECTRIC_MEDIA.size() * 6;
+			int freq_data_size = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ.size() * one_frq_size;
+			double * p_freq = new double[freq_data_size];
+			freq_data_size *= sizeof(double);
+			for (size_t i = 0; i < _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++i)
+			{
+				p_freq[0  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency;
+				p_freq[1  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.Wavelength;
+				p_freq[2  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.OpenCircuitVoltage;
+				p_freq[3  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.Phase;
+				p_freq[4  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.ElectricalEdgeLength;
+				p_freq[5  + i*one_frq_size] = static_cast<double>(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.SourceSegmLabel);
+				p_freq[6  + i*one_frq_size] = static_cast<double>(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.AbsolNumSegms);
+				p_freq[7  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitX;
+				p_freq[8  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitY;
+				p_freq[9  + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.LocationExcitZ;
+				p_freq[10 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirX;
+				p_freq[11 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirY;
+				p_freq[12 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._EXCITATION_BY_VOLTAGE_SOURCE.PositiveFeedDirZ;
+				p_freq[13 + i*one_frq_size] = static_cast<double>(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SPortSinc);
+				p_freq[14 + i*one_frq_size] = static_cast<double>(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SPortSource);
+				p_freq[15 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SRealPart;
+				p_freq[16 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SImagPart;
+				p_freq[17 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SMagnitudeLinear;
+				p_freq[18 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SMagnitudeDB;
+				p_freq[19 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SPhase;
+				p_freq[20 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SumS2MagnitudeLinear;
+				p_freq[21 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SumS2MagnitudeDB;
+				p_freq[22 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.S11;
+				p_freq[23 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.VSWR;
+				p_freq[24 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.EMAX;
+				p_freq[25 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.MetallicElements;
+				p_freq[26 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.MismatchFeed;
+				p_freq[27 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.NonRadiatingNetworks;
+				p_freq[28 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.BackPowerPassWaveguidePorts;
+				p_freq[29 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.BackPowerPassModalPorts;
+				p_freq[30 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.SumAllLosses;
+				p_freq[31 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.EfficiencyTheAntenna;
+				p_freq[32 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.BasedTotalActivePower;
+				p_freq[33 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentRealPart;
+				p_freq[34 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentImagPart;
+				p_freq[35 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentMagnitude;
+				p_freq[36 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.CurrentPhase;
+				p_freq[37 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittRealPart;
+				p_freq[38 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittImagPart;
+				p_freq[39 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittMagnitude;
+				p_freq[40 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.AdmittPhase;
+				p_freq[41 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceRealPart;
+				p_freq[42 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceImagPart;
+				p_freq[43 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedanceMagnitude;
+				p_freq[44 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.ImpedancePhase;
+				p_freq[45 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.Inductance;
+				p_freq[46 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.Capacitance;
+				p_freq[47 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DATA_OF_THE_VOLTAGE_SOURCE.Power;
+				p_freq[48 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.GainPower;
+				p_freq[49 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss;
+				p_freq[50 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.PowerLoss;
+				p_freq[51 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.MaximumSARValue;
+				p_freq[52 + i*one_frq_size] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.AveragedSARValue;
+				int s = 53 + i*one_frq_size;
+				for (size_t j = 0; j < _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.size(); ++j)
+				{
+					p_freq[s + 0 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].Tetta;
+					p_freq[s + 1 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].Phi;
+					p_freq[s + 2 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EthetaMagn;
+					p_freq[s + 3 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EthetaPhase;
+					p_freq[s + 4 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EphiMagn;
+					p_freq[s + 5 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EphiPhase;
+					p_freq[s + 6 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].DirectivityVert;
+					p_freq[s + 7 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].DirectivityHoriz;
+					p_freq[s + 8 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].DirectivityTotal;
+					p_freq[s + 9 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].PolarizationAxial;
+					p_freq[s + 10 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].PolarizationAngle;
+					p_freq[s + 11 + j * 12] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].Gain;
+				}
+				s = 53 + 12*_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.size();
+				for (size_t j = 0; j < _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA.size(); ++j)
+				{
+					p_freq[s + 0 + j * 6] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].RelPermittivity;
+					p_freq[s + 1 + j * 6] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].RelPermeability;
+					p_freq[s + 2 + j * 6] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].Conductivity;
+					p_freq[s + 3 + j * 6] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].TanDeltaElectric;
+					p_freq[s + 4 + j * 6] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].TanDeltaMagnetic;
+					p_freq[s + 5 + j * 6] = _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].MassDensity;
+				}
+			}
+			char * cp_freq = (char *) p_freq;
+
+			
 			IBPP::Transaction trOutput = IBPP::TransactionFactory(*dataBase_);
 			trOutput->Start();
 			try
 			{
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trOutput);
-				st->Prepare("insert into OUTPUT_PARAMS (ID_ANTENNA, FST_S11, FST_W, FST_BANDWIDTH, SCND_S11, SCND_W, SCND_BANDWIDTH, THIRD_S11, THIRD_W, THIRD_BANDWIDTH) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id");
+				st->Prepare("insert into OUTPUT_PARAMS (ID_ANTENNA, ALL_FREQ_SIZE, TP_SIZE, DM_SIZE, ALL_FREQ, FST_S11, FST_W, FST_BANDWIDTH, SCND_S11, SCND_W, SCND_BANDWIDTH, THIRD_S11, THIRD_W, THIRD_BANDWIDTH, MU_LENGTHALLSEGMS_M, MU_SURFALLTRI_MM, MU_NUMMETALLICTRI, MU_NUMDIELECTRTRI, MU_NUMAPERTURETRI, MU_NUMGOTRI, MU_NUMWINDSCREENTRI, MU_NUMFEMSURFACETRI, MU_NUMMODALPORTTRI, MU_NUMMETALLICSEGMS, MU_NUMDIEMAGNCUBS, MU_NUMTETRAHEDRA, MU_NUMEDGESPOREGION, MU_NUMWEDGESPOREGION, MU_NUMFOCKREGIONS, MU_NUMPOLYSURFACES, MU_NUMUTDCYLINDRES, MU_NUMMETALLICEDGESMOM, MU_NUMMETALLICEDGESPO, MU_NUMDIELECTRICEDGESMOM, MU_NUMDIELECTRICEDGESPO, MU_NUMAPERTUREEDGESMOM, MU_NUMEDGESFEMMOMSURF, MU_NUMNODESBETWEENSEGMS, MU_NUMCONNECTIONPOINTS, MU_NUMDIELECTRICCUBOIDS, MU_NUMMAGNETICCUBOIDS, MU_NUMBASISFUNCTMOM, MU_NUMBASISFUNCTPO) values (?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?) returning id");
 				st->Set(1, idAntenna);
-				st->Set(2, _antenna.outputPar.fst_s11);
-				st->Set(3, _antenna.outputPar.fst_w);
-				st->Set(4, _antenna.outputPar.fst_bandwidth);
-				st->Set(5, _antenna.outputPar.scnd_s11);
-				st->Set(6, _antenna.outputPar.scnd_w);
-				st->Set(7, _antenna.outputPar.scnd_bandwidth);
-				st->Set(8, _antenna.outputPar.third_s11);
-				st->Set(9, _antenna.outputPar.third_w);
-				st->Set(10, _antenna.outputPar.third_bandwidth);
+				st->Set(2, freq_data_size);
+				st->Set(3, (int)_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[0]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.size());
+				st->Set(4, (int)_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[0]._VEC_DATA_FOR_DIELECTRIC_MEDIA.size());
+				WriteBinDataToBlobField(st, 5, cp_freq, freq_data_size);
+				st->Set(6, _antenna.outputPar.fst_s11);
+				st->Set(7, _antenna.outputPar.fst_w);
+				st->Set(8, _antenna.outputPar.fst_bandwidth);
+				st->Set(9, _antenna.outputPar.scnd_s11);
+				st->Set(10, _antenna.outputPar.scnd_w);
+				st->Set(11, _antenna.outputPar.scnd_bandwidth);
+				st->Set(12, _antenna.outputPar.third_s11);
+				st->Set(13, _antenna.outputPar.third_w);
+				st->Set(14, _antenna.outputPar.third_bandwidth);
+				st->Set(15, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.LengthAllSegms_M);
+				st->Set(16, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.SurfAllTri_MM);
+				st->Set(17, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicTri);
+				st->Set(18, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectrTri);
+				st->Set(19, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureTri);
+				st->Set(20, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumGoTri);
+				st->Set(21, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWindscreenTri);
+				st->Set(22, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFemSurfaceTri);
+				st->Set(23, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumModalPortTri);
+				st->Set(24, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicSegms);
+				st->Set(25, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDieMagnCubs);
+				st->Set(26, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumTetrahedra);
+				st->Set(27, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesPORegion);
+				st->Set(28, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWedgesPORegion);
+				st->Set(29, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFockRegions);
+				st->Set(30, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumPolySurfaces);
+				st->Set(31, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumUTDCylindres);
+				st->Set(32, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesMoM);
+				st->Set(33, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesPO);
+				st->Set(34, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesMoM);
+				st->Set(35, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesPO);
+				st->Set(36, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureEdgesMoM);
+				st->Set(37, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesFEMMomSurf);
+				st->Set(38, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumNodesBetweenSegms);
+				st->Set(39, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumConnectionPoints);
+				st->Set(40, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricCuboids);
+				st->Set(41, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMagneticCuboids);
+				st->Set(42, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctMoM);
+				st->Set(43, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctPO);
 				st->Execute();
 				st->Get(1, idOutputPar);
 				trOutput->Commit();
@@ -1256,378 +935,10 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 				trOutput->Rollback();
 				return -1;
 			}
+			delete[] p_freq;
 		}
-
-		if (_antenna.outputPar.findDATA_FOR_MEMORY_USAGE)
-		{
-			IBPP::Transaction trDataMemoryUsage = IBPP::TransactionFactory(*dataBase_);
-			trDataMemoryUsage->Start();
-			try
-			{
-				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trDataMemoryUsage);
-				st->Prepare("insert into DATA_FOR_MEMORY_USAGE (ID_OUTPUT_PARAM, LENGTHALLSEGMS_M, SURFALLTRI_MM, NUMMETALLICTRI, NUMDIELECTRTRI, NUMAPERTURETRI, NUMGOTRI, NUMWINDSCREENTRI, NUMFEMSURFACETRI, NUMMODALPORTTRI, NUMMETALLICSEGMS, NUMDIEMAGNCUBS, NUMTETRAHEDRA, NUMEDGESPOREGION, NUMWEDGESPOREGION, NUMFOCKREGIONS, NUMPOLYSURFACES, NUMUTDCYLINDRES, NUMMETALLICEDGESMOM, NUMMETALLICEDGESPO, NUMDIELECTRICEDGESMOM, NUMDIELECTRICEDGESPO, NUMAPERTUREEDGESMOM, NUMEDGESFEMMOMSURF, NUMNODESBETWEENSEGMS, NUMCONNECTIONPOINTS, NUMDIELECTRICCUBOIDS, NUMMAGNETICCUBOIDS, NUMBASISFUNCTMOM, NUMBASISFUNCTPO) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-				st->Set(1, idOutputPar);
-				st->Set(2, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.LengthAllSegms_M);
-				st->Set(3, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.SurfAllTri_MM);
-				st->Set(4, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicTri);
-				st->Set(5, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectrTri);
-				st->Set(6, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureTri);
-				st->Set(7, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumGoTri);
-				st->Set(8, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWindscreenTri);
-				st->Set(9, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFemSurfaceTri);
-				st->Set(10, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumModalPortTri);
-				st->Set(11, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicSegms);
-				st->Set(12, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDieMagnCubs);
-				st->Set(13, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumTetrahedra);
-				st->Set(14, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesPORegion);
-				st->Set(15, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumWedgesPORegion);
-				st->Set(16, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumFockRegions);
-				st->Set(17, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumPolySurfaces);
-				st->Set(18, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumUTDCylindres);
-				st->Set(19, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesMoM);
-				st->Set(20, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMetallicEdgesPO);
-				st->Set(21, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesMoM);
-				st->Set(22, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricEdgesPO);
-				st->Set(23, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumApertureEdgesMoM);
-				st->Set(24, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumEdgesFEMMomSurf);
-				st->Set(25, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumNodesBetweenSegms);
-				st->Set(26, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumConnectionPoints);
-				st->Set(27, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumDielectricCuboids);
-				st->Set(28, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumMagneticCuboids);
-				st->Set(29, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctMoM);
-				st->Set(30, _antenna.outputPar._DATA_FOR_MEMORY_USAGE.NumBasisFunctPO);
-				st->Execute();
-				trDataMemoryUsage->Commit();
-			}
-			catch (...)
-			{
-				trDataMemoryUsage->Rollback();
-			}
-		}
-
-		for (size_t i=0; i<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++i)
-		{
-			if (_antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE)
-			{
-				IBPP::Transaction trOutput = IBPP::TransactionFactory(*dataBase_);
-				trOutput->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trOutput);
-					st->Prepare("insert into OUTPUT_PARAMS_FOR_ONE_FREQ (ID_OUTPUT_PARAM, FREQUENCY) values (?, ?) returning id");
-					st->Set(1, idOutputPar);
-					st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[0].Frequency);
-					st->Execute();
-					st->Get(1, idOutputParOneFreq);
-					trOutput->Commit();
-				}
-				catch (...)
-				{
-					trOutput->Rollback();
-					return -1;
-				}
-			}
-
-			if (_antenna.outputPar.findDATA_OF_THE_VOLTAGE_SOURCE)
-			{
-				for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE.size(); ++j)
-				{
-					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-					tr->Start();
-					try
-					{
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-						st->Prepare("insert into DATA_OF_THE_VOLTAGE_SOURCE (ID_OUTPUT, CURRENTREALPART, CURRENTIMAGPART, CURRENTMAGNITUDE, CURRENTPHASE, ADMITTREALPART, ADMITTIMAGPART, ADMITTMAGNITUDE, ADMITTPHASE, IMPEDANCEREALPART, IMPEDANCEIMAGPART, IMPEDANCEMAGNITUDE, IMPEDANCEPHASE, INDUCTANCE, CAPACITANCE, POWER) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-						st->Set(1, idOutputParOneFreq);
-						st->Set(2,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].CurrentRealPart);
-						st->Set(3,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].CurrentImagPart);
-						st->Set(4,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].CurrentMagnitude);
-						st->Set(5,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].CurrentPhase);
-						st->Set(6,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].AdmittRealPart);
-						st->Set(7,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].AdmittImagPart);
-						st->Set(8,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].AdmittMagnitude);
-						st->Set(9,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].AdmittPhase);
-						st->Set(10, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].ImpedanceRealPart);
-						st->Set(11, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].ImpedanceImagPart);
-						st->Set(12, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].ImpedanceMagnitude);
-						st->Set(13, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].ImpedancePhase);
-						st->Set(14, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].Inductance);
-						st->Set(15, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].Capacitance);
-						st->Set(16, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_OF_THE_VOLTAGE_SOURCE[j].Power);
-						st->Execute();
-						tr->Commit();
-					}
-					catch (...)
-					{
-						tr->Rollback();
-					}
-				}
-			}
-
-			if (_antenna.outputPar.findSCATTERING_PARAMETERS)
-			{
-				IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-				tr->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-					st->Prepare("insert into SCATTERING_PARAMETERS (ID_OUTPUT, SPORTSINC, SPORTSOURCE, SREALPART, SIMAGPART, SMAGNITUDELINEAR, SMAGNITUDEDB, SPHASE, SUMS2MAGNITUDELINEAR, SUMS2MAGNITUDEDB, S11, VSWR, EMAX) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-					st->Set(1, idOutputParOneFreq);
-					st->Set(2,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SPortSinc);
-					st->Set(3,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SPortSource);
-					st->Set(4,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SRealPart);
-					st->Set(5,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SImagPart);
-					st->Set(6,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SMagnitudeLinear);
-					st->Set(7,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SMagnitudeDB);
-					st->Set(8,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SPhase);
-					st->Set(9,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SumS2MagnitudeLinear);
-					st->Set(10, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SumS2MagnitudeDB);
-					st->Set(11, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.S11);
-					st->Set(12, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.VSWR);
-					st->Set(13, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.EMAX);
-					st->Execute();
-					tr->Commit();
-				}
-				catch (...)
-				{
-					tr->Rollback();
-				}
-			}
-
-			if (_antenna.outputPar.findDATA_FOR_DIELECTRIC_MEDIA || _antenna.outputPar.findDATA_FOR_THE_INDIVIDUAL_LAYERS)
-			{
-				for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA.size(); ++j)
-				{
-					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-					tr->Start();
-					try
-					{
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-						st->Prepare("insert into DATA_FOR_DIELECTRIC_MEDIA (ID_OUTPUT, INTERNALINDEX, RELPERMITTIVITY, RELPERMEABILITY, CONDUCTIVITY, TANDELTAELECTRIC, TANDELTAMAGNETIC, MASSDENSITY) values (?,?,?,?,?,?,?,?)");
-						st->Set(1, idOutputParOneFreq);
-						st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].InternalIndex);
-						st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].RelPermittivity);
-						st->Set(4, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].RelPermeability);
-						st->Set(5, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].Conductivity);
-						st->Set(6, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].TanDeltaElectric);
-						st->Set(7, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].TanDeltaMagnetic);
-						st->Set(8, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DATA_FOR_DIELECTRIC_MEDIA[j].MassDensity);
-						st->Execute();
-						tr->Commit();
-					}
-					catch (...)
-					{
-						tr->Rollback();
-					}
-				}
-			}
-
-			if (_antenna.outputPar.findEXCITATION_BY_VOLTAGE_SOURCE)
-			{
-				if (_antenna.type == PLANE)
-				{
-					for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.size(); ++j)
-					{
-						IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-						tr->Start();
-						try
-						{
-							IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-							st->Prepare("insert into EXCITATION_BY_VOLTAGE_SOURCE (ID_OUTPUT, EXCITATIONINDEX, FREQUENCY, WAVELENGTH, OPENCIRCUITVOLTAGE, PHASE, ELECTRICALEDGELENGTH) values (?,?,?,?,?,?,?)");
-							st->Set(1, idOutputParOneFreq);
-							st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].ExcitationIndex);
-							st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].Frequency);
-							st->Set(4, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].Wavelength);
-							st->Set(5, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].OpenCircuitVoltage);
-							st->Set(6, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].Phase);
-							st->Set(7, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].ElectricalEdgeLength);
-							st->Execute();
-							tr->Commit();
-						}
-						catch (...)
-						{
-							tr->Rollback();
-						}
-					}
-				}
-				if (_antenna.type == STRIPE || _antenna.type == WIRE)
-				{
-					for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE.size(); ++j)
-					{
-						IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-						tr->Start();
-						try
-						{
-							IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-							st->Prepare("insert into EXCITATION_BY_VOLTAGE_SOURCE (ID_OUTPUT, EXCITATIONINDEX, FREQUENCY, WAVELENGTH, OPENCIRCUITVOLTAGE, PHASE, SOURCESEGMLABEL, ABSOLNUMSEGMS, LOCATIONEXCITX, LOCATIONEXCITY, LOCATIONEXCITZ, POSITIVEFEEDDIRX, POSITIVEFEEDDIRY, POSITIVEFEEDDIRZ) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-							st->Set(1, idOutputParOneFreq);
-							st->Set(2,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].ExcitationIndex);
-							st->Set(3,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].Frequency);
-							st->Set(4,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].Wavelength);
-							st->Set(5,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].OpenCircuitVoltage);
-							st->Set(6,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].Phase);
-							st->Set(7,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].SourceSegmLabel);
-							st->Set(8,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].AbsolNumSegms);
-							st->Set(9,  _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].LocationExcitX);
-							st->Set(10, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].LocationExcitY);
-							st->Set(11, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].LocationExcitZ);
-							st->Set(12, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].PositiveFeedDirX);
-							st->Set(13, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].PositiveFeedDirY);
-							st->Set(14, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_EXCITATION_BY_VOLTAGE_SOURCE[j].PositiveFeedDirZ);
-							st->Execute();
-							tr->Commit();
-						}
-						catch (...)
-						{
-							tr->Rollback();
-						}
-					}
-				}
-			}
-
-			if (_antenna.outputPar.findDIRECTIVITY_PATTERN_PARAMS)
-			{
-				if (_antenna.type == WIRE)
-				{
-					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-					tr->Start();
-					try
-					{
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-						st->Prepare("insert into DIRECTIVITY_PATTERN_PARAMS (ID_OUTPUT, GAINPOWER, GAINPOWERLOSS, DTHETA, DPHI, POLARHORIZWATT, POLARHORIZPERS, POLARVERTWATT, POLARVERTPERS, POLARSWATT, POLARSPERS, POLARZWATT, POLARZPERS, POLARLEFTHANDWATT, POLARLEFTHANDPERS, POLARRIGHTHANDWATT, POLARRIGHTHANDPERS) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-						st->Set(1, idOutputParOneFreq);
-						st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.GainPower);
-						st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss);
-						st->Set(4, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.DTheta);
-						st->Set(5, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.DPhi);
-						st->Set(6, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarHorizWatt);
-						st->Set(7, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarHorizPers);
-						st->Set(8, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarVertWatt);
-						st->Set(9, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarVertPers);
-						st->Set(10, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarSWatt);
-						st->Set(11, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarSPers);
-						st->Set(12, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarZWatt);
-						st->Set(13, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarZPers);
-						st->Set(14, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandWatt);
-						st->Set(15, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarLeftHandPers);
-						st->Set(16, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandWatt);
-						st->Set(17, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.PolarRightHandPers);
-						st->Execute();
-						tr->Commit();
-					}
-					catch (...)
-					{
-						tr->Rollback();
-					}
-				}
-				if (_antenna.type == STRIPE || _antenna.type == PLANE)
-				{
-					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-					tr->Start();
-					try
-					{
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-						st->Prepare("insert into DIRECTIVITY_PATTERN_PARAMS (ID_OUTPUT, GAINPOWER, GAINPOWERLOSS) values (?,?,?)");
-						st->Set(1, idOutputParOneFreq);
-						st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.GainPower);
-						st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._DIRECTIVITY_PATTERN_PARAMS.GainPowerLoss);
-						st->Execute();
-						tr->Commit();
-					}
-					catch (...)
-					{
-						tr->Rollback();
-					}
-				}
-			}
-
-			if (_antenna.outputPar.findLOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS)
-			{
-				if (_antenna.type == STRIPE)
-				{
-					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-					tr->Start();
-					try
-					{
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-						st->Prepare("insert into LOSSES_IN_DIELECTRIC_VOLUME_ELE (ID_OUTPUT, POWERLOSS, MAXIMUMSARVALUE, AVERAGEDSARVALUE) values (?,?,?,?)");
-						st->Set(1, idOutputParOneFreq);
-						st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.PowerLoss);
-						st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.MaximumSARValue);
-						st->Set(4, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._LOSSES_IN_DIELECTRIC_VOLUME_ELEMENTS.AveragedSARValue);
-						st->Execute();
-						tr->Commit();
-					}
-					catch (...)
-					{
-						tr->Rollback();
-					}
-				}
-			}
-
-			if (_antenna.outputPar.findSUMMARY_OF_LOSSES)
-			{
-				IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-				tr->Start();
-				try
-				{
-					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-					st->Prepare("insert into SUMMARY_OF_LOSSES (ID_OUTPUT, METALLICELEMENTS, MISMATCHFEED, NONRADIATINGNETWORKS, BACKPOWERPASSWAVEGUIDEPORTS, BACKPOWERPASSMODALPORTS, SUMALLLOSSES, EFFICIENCYTHEANTENNA, BASEDTOTALACTIVEPOWER) values (?,?,?,?,?,?,?,?,?)");
-					st->Set(1, idOutputParOneFreq);
-					st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.MetallicElements);
-					st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.MismatchFeed);
-					st->Set(4, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.NonRadiatingNetworks);
-					st->Set(5, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.BackPowerPassWaveguidePorts);
-					st->Set(6, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.BackPowerPassModalPorts);
-					st->Set(7, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.SumAllLosses);
-					st->Set(8, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.EfficiencyTheAntenna);
-					st->Set(9, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SUMMARY_OF_LOSSES.BasedTotalActivePower);
-					st->Execute();
-					tr->Commit();
-				}
-				catch (...)
-				{
-					tr->Rollback();
-				}
-			}
-
-			if (_antenna.outputPar.findDIRECTIVITY_PATTERN_THETA_PHI)
-			{
-				for(size_t j = 0; j<_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI.size(); ++j)
-				{
-					IBPP::Transaction tr = IBPP::TransactionFactory(*dataBase_);
-					tr->Start();
-					try
-					{
-						IBPP::Statement st = IBPP::StatementFactory(*dataBase_, tr);
-						st->Prepare("insert into DIRECTIVITY_PATTERN_THETA_PHI (ID_OUTPUT, TETTA, PHI, ETHETAMAGN, ETHETAPHASE, EPHIMAGN, EPHIPHASE, DIRECTIVITYVERT, DIRECTIVITYHORIZ, DIRECTIVITYTOTAL, POLARIZATIONAXIAL, POLARIZATIONANGLE, GAIN) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-						st->Set(1, idOutputParOneFreq);
-						st->Set(2, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].Tetta);
-						st->Set(3, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].Phi);
-						st->Set(4, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EthetaMagn);
-						st->Set(5, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EthetaPhase);
-						st->Set(6, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EphiMagn);
-						st->Set(7, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].EphiPhase);
-						st->Set(8, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].DirectivityVert);
-						st->Set(9, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].DirectivityHoriz);
-						st->Set(10, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].DirectivityTotal);
-						st->Set(11, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].PolarizationAxial);
-						st->Set(12, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].PolarizationAngle);
-						st->Set(13, _antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._VEC_DIRECTIVITY_PATTERN_THETA_PHI[j].Gain);
-						st->Execute();
-						tr->Commit();
-					}
-					catch (...)
-					{
-						tr->Rollback();
-					}
-				}
-			}
-		}
-		//cout << "output: " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
+		//std::cout << "output: " << (double)(clock() - tStart) / CLOCKS_PER_SEC << endl;
 	}
-
-
 	else
 	{
 		return 1;
