@@ -360,7 +360,7 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 					while (st->Fetch())
 					{
 						st->Get(1, dip);
-						antI.inputPar.isDipole = static_cast<bool>(dip);
+						dip == 0 ? antI.inputPar.isDipole = false : antI.inputPar.isDipole = true;
 						st->Get(2, antI.inputPar.Radiator.ScaleX);
 						st->Get(3, antI.inputPar.Radiator.ScaleY);
 						st->Get(4, antI.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
