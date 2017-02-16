@@ -69,14 +69,21 @@ void SelectAll::ResetSelectAll()
 	ants.clear();
 	antsids.clear();
 	pkCore->GetExperiments(ids, exps);
-	for (int i = 0; i < ids.size(); ++i)
+	size_t ants_count = 0;
+	for (size_t i = 0; i < ids.size(); ++i)
+	{
+		ants_count += exps[i].antennas_count;
+	}
+	size_t ants_done = 0;
+	for (size_t i = 0; i < ids.size(); ++i)
 	{
 		std::vector<int> tempids;
 		antsids.push_back(tempids);
 		std::vector<Antenna> tempants;
 		ants.push_back(tempants);
 		pkCore->GetAntennasByExperiment(ants[i], antsids[i], ids[i]);
-		progress = 100*(i+1)/ids.size();
+		ants_done += exps[i].antennas_count;
+		progress = 100 * (ants_done) / ants_count;
 	}
 }
 

@@ -264,9 +264,17 @@ int Core::PrepareExperimentBeforeWrite()
 
 int Core::WriteData()
 {
-	if (antennas.size() > 0)
+	pExperiment->antennas_count = 0;
+	for (size_t i = 0; i < antennas.size(); ++i)
 	{
+		if (!antennas[i].aborted)
+		{
+			pExperiment->antennas_count++;
+		}
+	}
 
+	if (antennas.size() > 0)
+	{ 
 		int resId = -1;
 		for (size_t i = 0; i < antennas.size(); ++i)
 		{

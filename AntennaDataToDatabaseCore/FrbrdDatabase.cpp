@@ -220,7 +220,7 @@ int FrbrdDatabase::DeleteExperiment(int idExperiment)
 /// @details Получение всех экспериментов из БД
 int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>& exps, bool fullComment)
 {
-	int id, param_size;
+	int id, param_size, ant_cnt;
 	IBPP::Date date;
 	std::string comm, word;
 	std::vector<std::string> vs;
@@ -235,7 +235,7 @@ int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>
 			try
 			{
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExperiments);
-				st->Prepare("select id, WRITEN_DATE, COMMENT, PARAMS_SIZE, PARAMS from EXPERIMENT order by id");
+				st->Prepare("select id, WRITEN_DATE, COMMENT, PARAMS_SIZE, PARAMS, ANTENNAS_COUNT from EXPERIMENT order by id");
 				st->Execute();
 				while (st->Fetch())
 				{
@@ -244,6 +244,7 @@ int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>
 					st->Get(3, comm);
 					st->Get(4, param_size);
 					char * c_param = GetBinDataFromBlobField(st, 5, param_size);
+					st->Get(6, ant_cnt);
 					std::string s_param(c_param, param_size);
 
 					ids.push_back(id);
@@ -268,6 +269,7 @@ int FrbrdDatabase::GetExperiments(std::vector<int>& ids, std::vector<Experiment>
 					newEx.date.tm_year = date.Year();
 					newEx.date.tm_mon = date.Month();
 					newEx.date.tm_mday = date.Day();
+					newEx.antennas_count = ant_cnt;
 					exps.push_back(newEx);
 
 					stringstream strs(s_param);
@@ -349,48 +351,57 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 				trInputAntennas->Start();
 				try
 				{
-					int fractal_n, mpoints_size, grd_size;
+					short dip;
+					int fractal_n, mpoints_size, fpoints_size, grd_size;
 					IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInputAntennas);
-					st->Prepare("select scalex, scaley, radius, fractal_n, fractal_m, mpoints_size, points, affine, mpoints, FEED_X, FEED_Y, S_PERMITTIVITY, S_LOSSTANGENT, S_DENSITY, S_THICKNESS, S_COORLEFTUPX, S_COORLEFTUPY, S_COORRIGHTDOWNX, S_COORRIGHTDOWNY, GROUND_SIZE, GROUND from INPUT_PARAMS where ID_ANTENNA = ? ");
+					st->Prepare("select is_dipole, scalex, scaley, radius, fractal_n, fractal_m, fpoints_size, mpoints_size, points, affine, fpoints, mpoints, FEED_X, FEED_Y, S_PERMITTIVITY, S_LOSSTANGENT, S_DENSITY, S_THICKNESS, S_COORLEFTUPX, S_COORLEFTUPY, S_COORRIGHTDOWNX, S_COORRIGHTDOWNY, GROUND_SIZE, GROUND from INPUT_PARAMS where ID_ANTENNA = ? ");
 					st->Set(1, antennasID[i]);
 					st->Execute();
 					while (st->Fetch())
 					{
-						st->Get(1, antI.inputPar.Radiator.ScaleX);
-						st->Get(2, antI.inputPar.Radiator.ScaleY);
-						st->Get(3, antI.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
-						st->Get(4, antI.inputPar.Radiator.fr_N);
-						st->Get(5, antI.inputPar.Radiator.fr_m);
-						st->Get(6, mpoints_size);
+						st->Get(1, dip);
+						antI.inputPar.isDipole = static_cast<bool>(dip);
+						st->Get(2, antI.inputPar.Radiator.ScaleX);
+						st->Get(3, antI.inputPar.Radiator.ScaleY);
+						st->Get(4, antI.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
+						st->Get(5, antI.inputPar.Radiator.fr_N);
+						st->Get(6, antI.inputPar.Radiator.fr_m);
+						st->Get(7, fpoints_size);
+						st->Get(8, mpoints_size);
 						fractal_n = antI.inputPar.Radiator.fr_N;
-						char * с_points = GetBinDataFromBlobField(st, 7, (fractal_n + 1)*sizeof(double) * 3);
+						char * с_points = GetBinDataFromBlobField(st, 9, (fractal_n + 1)*sizeof(double) * 3);
 						double * points = (double *) с_points;
-						char * c_affine = GetBinDataFromBlobField(st, 8, fractal_n*sizeof(double) * 6);
+						char * c_affine = GetBinDataFromBlobField(st, 10, fractal_n*sizeof(double) * 7);
 						double * affine = (double *) c_affine;
-						char * c_mpoints = GetBinDataFromBlobField(st, 9, mpoints_size);
+						char * c_fpoints = GetBinDataFromBlobField(st, 11, fpoints_size);
+						double * fpoints = (double *) c_fpoints;
+						char * c_mpoints = GetBinDataFromBlobField(st, 12, mpoints_size);
 						double * mpoints = (double *) c_mpoints;
-						st->Get(10, antI.inputPar.Feed.FeedX);
-						st->Get(11, antI.inputPar.Feed.FeedY);
-						st->Get(12, antI.inputPar.Substrate.Permittivity);
-						st->Get(13, antI.inputPar.Substrate.LossTangent);
-						st->Get(14, antI.inputPar.Substrate.Density);
-						st->Get(15, antI.inputPar.Substrate.Thickness);
-						st->Get(16, antI.inputPar.Substrate.CoorLeftUpX);
-						st->Get(17, antI.inputPar.Substrate.CoorLeftUpY);
-						st->Get(18, antI.inputPar.Substrate.CoorRightDownX);
-						st->Get(19, antI.inputPar.Substrate.CoorRightDownY);
-						st->Get(20, grd_size);
-						char * c_ground = GetBinDataFromBlobField(st, 21, grd_size);
+						st->Get(13, antI.inputPar.Feed.FeedX);
+						st->Get(14, antI.inputPar.Feed.FeedY);
+						st->Get(15, antI.inputPar.Substrate.Permittivity);
+						st->Get(16, antI.inputPar.Substrate.LossTangent);
+						st->Get(17, antI.inputPar.Substrate.Density);
+						st->Get(18, antI.inputPar.Substrate.Thickness);
+						st->Get(19, antI.inputPar.Substrate.CoorLeftUpX);
+						st->Get(20, antI.inputPar.Substrate.CoorLeftUpY);
+						st->Get(21, antI.inputPar.Substrate.CoorRightDownX);
+						st->Get(22, antI.inputPar.Substrate.CoorRightDownY);
+						st->Get(23, grd_size);
+						char * c_ground = GetBinDataFromBlobField(st, 24, grd_size);
 						double * ground = (double *) c_ground;
 						antI.inputPar.Radiator.fr_pT.resize(fractal_n+1);
 						antI.inputPar.Radiator.fr_pX.resize(fractal_n+1);
-						antI.inputPar.Radiator.fr_pY.resize(fractal_n+1);
+						antI.inputPar.Radiator.fr_pY.resize(fractal_n + 1);
+						antI.inputPar.Radiator.fr_typeD.resize(fractal_n);
 						antI.inputPar.Radiator.fr_D11.resize(fractal_n);
 						antI.inputPar.Radiator.fr_D12.resize(fractal_n);
 						antI.inputPar.Radiator.fr_D21.resize(fractal_n);
 						antI.inputPar.Radiator.fr_D22.resize(fractal_n);
 						antI.inputPar.Radiator.fr_lam.resize(fractal_n);
 						antI.inputPar.Radiator.fr_al.resize(fractal_n);
+						antI.inputPar.Radiator.fr_pred1X.resize((fpoints_size / sizeof(double)) / 2);
+						antI.inputPar.Radiator.fr_pred1Y.resize((fpoints_size / sizeof(double)) / 2);
 						antI.inputPar.Radiator.fr_predmX.resize((mpoints_size/sizeof(double))/2);
 						antI.inputPar.Radiator.fr_predmY.resize((mpoints_size/sizeof(double))/2);
 						antI.inputPar.Ground.coordX.resize((grd_size / sizeof(double)) / 2);
@@ -403,20 +414,24 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 						}
 						for (int j = 0; j < fractal_n; ++j)
 						{
-							antI.inputPar.Radiator.fr_D11[j] = affine[0 + j * 6];
-							antI.inputPar.Radiator.fr_D12[j] = affine[1 + j * 6];
-							antI.inputPar.Radiator.fr_D21[j] = affine[2 + j * 6];
-							antI.inputPar.Radiator.fr_D22[j] = affine[3 + j * 6];
-							antI.inputPar.Radiator.fr_lam[j] = affine[4 + j * 6];
-							antI.inputPar.Radiator.fr_al[j]  = affine[5 + j * 6];
+							antI.inputPar.Radiator.fr_typeD[j] = affine[0 + j * 7];
+							antI.inputPar.Radiator.fr_D11[j]   = affine[1 + j * 7];
+							antI.inputPar.Radiator.fr_D12[j]   = affine[2 + j * 7];
+							antI.inputPar.Radiator.fr_D21[j]   = affine[3 + j * 7];
+							antI.inputPar.Radiator.fr_D22[j]   = affine[4 + j * 7];
+							antI.inputPar.Radiator.fr_lam[j]   = affine[5 + j * 7];
+							antI.inputPar.Radiator.fr_al[j]    = affine[6 + j * 7];
+						}
+						for (size_t j = 0; j < (fpoints_size/sizeof(double))/ 2; ++j)
+						{
+							antI.inputPar.Radiator.fr_pred1X[j] = fpoints[0 + j * 2];
+							antI.inputPar.Radiator.fr_pred1Y[j] = fpoints[1 + j * 2];
 						}
 						for (size_t j = 0; j < (mpoints_size/sizeof(double))/2; ++j)
 						{
 							antI.inputPar.Radiator.fr_predmX[j] = mpoints[0 + j * 2];
 							antI.inputPar.Radiator.fr_predmY[j] = mpoints[1 + j * 2];
 						}
-						antI.inputPar.Radiator.fr_pred1X = antI.inputPar.Radiator.fr_pX;
-						antI.inputPar.Radiator.fr_pred1Y = antI.inputPar.Radiator.fr_pY;
 						for (size_t j = 0; j < (grd_size / sizeof(double)) / 2; ++j)
 						{
 							antI.inputPar.Ground.coordX[j] = ground[0 + j * 2];
@@ -424,6 +439,7 @@ int FrbrdDatabase::GetAntennas(std::vector<Antenna>& antennas, std::vector<int>&
 						} 
 						delete[] с_points;
 						delete[] c_affine;
+						delete[] c_fpoints;
 						delete[] c_mpoints;
 						delete[] c_ground;
 					}
@@ -648,11 +664,12 @@ int FrbrdDatabase::WriteExperiment(Experiment *pExperiment)
 				IBPP::Date dt;
 				dt.SetDate(pExperiment->date.tm_year, pExperiment->date.tm_mon, pExperiment->date.tm_mday);
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trExperiment);
-				st->Prepare("insert into EXPERIMENT (WRITEN_DATE, COMMENT, PARAMS, PARAMS_SIZE) values (?, ?, ?, ?) returning id");
+				st->Prepare("insert into EXPERIMENT (WRITEN_DATE, COMMENT, PARAMS, PARAMS_SIZE, ANTENNAS_COUNT) values (?, ?, ?, ?, ?) returning id");
 				st->Set(1, dt);
 				st->Set(2, pExperiment->comment);
 				WriteBinDataToBlobField(st, 3, c_params, s_params.size());
 				st->Set(4, (int)s_params.size());
+				st->Set(5, (int)pExperiment->antennas_count);
 				st->Execute();
 				st->Get(1, idExperiment);
 				trExperiment->Commit();
@@ -705,8 +722,10 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 		//tStart = clock();
 		int size_fp = sizeof(double) * (_antenna.inputPar.Radiator.fr_N + 1) * 3;
 		double * p_fp = new double[(_antenna.inputPar.Radiator.fr_N + 1) * 3];
-		int size_at = sizeof(double) * _antenna.inputPar.Radiator.fr_N * 6;
-		double * p_at = new double[_antenna.inputPar.Radiator.fr_N * 6];
+		int size_at = sizeof(double) * _antenna.inputPar.Radiator.fr_N * 7;
+		double * p_at = new double[_antenna.inputPar.Radiator.fr_N * 7];
+		int size_f1p = sizeof(double) * _antenna.inputPar.Radiator.fr_pred1X.size() * 2;
+		double * p_f1p = new double[_antenna.inputPar.Radiator.fr_pred1X.size() * 2];
 		int size_fmp = sizeof(double) * _antenna.inputPar.Radiator.fr_predmX.size() * 2;
 		double * p_fmp = new double[_antenna.inputPar.Radiator.fr_predmX.size() * 2];
 		int size_grd = sizeof(double) * _antenna.inputPar.Ground.coordX.size() * 2;
@@ -719,17 +738,23 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 		}
 		for (int j = 0; j < _antenna.inputPar.Radiator.fr_N; ++j)
 		{
-			p_at[0 + j * 6] = _antenna.inputPar.Radiator.fr_D11[j];
-			p_at[1 + j * 6] = _antenna.inputPar.Radiator.fr_D12[j];
-			p_at[2 + j * 6] = _antenna.inputPar.Radiator.fr_D21[j];
-			p_at[3 + j * 6] = _antenna.inputPar.Radiator.fr_D22[j];
-			p_at[4 + j * 6] = _antenna.inputPar.Radiator.fr_lam[j];
-			p_at[5 + j * 6] = _antenna.inputPar.Radiator.fr_al[j];
+			p_at[0 + j * 7] = _antenna.inputPar.Radiator.fr_typeD[j];
+			p_at[1 + j * 7] = _antenna.inputPar.Radiator.fr_D11[j];
+			p_at[2 + j * 7] = _antenna.inputPar.Radiator.fr_D12[j];
+			p_at[3 + j * 7] = _antenna.inputPar.Radiator.fr_D21[j];
+			p_at[4 + j * 7] = _antenna.inputPar.Radiator.fr_D22[j];
+			p_at[5 + j * 7] = _antenna.inputPar.Radiator.fr_lam[j];
+			p_at[6 + j * 7] = _antenna.inputPar.Radiator.fr_al[j];
+		}
+		for (size_t j = 0; j < _antenna.inputPar.Radiator.fr_pred1X.size(); ++j)
+		{
+			p_f1p[0 + j * 2] = _antenna.inputPar.Radiator.fr_pred1X[j];
+			p_f1p[1 + j * 2] = _antenna.inputPar.Radiator.fr_pred1Y[j];
 		}
 		for (size_t j = 0; j < _antenna.inputPar.Radiator.fr_predmX.size(); ++j)
 		{
-			p_fmp[0 + j * 2] = _antenna.inputPar.Radiator.fr_pred1X[j];
-			p_fmp[1 + j * 2] = _antenna.inputPar.Radiator.fr_pred1Y[j];
+			p_fmp[0 + j * 2] = _antenna.inputPar.Radiator.fr_predmX[j];
+			p_fmp[1 + j * 2] = _antenna.inputPar.Radiator.fr_predmY[j];
 		}
 		for (size_t j = 0; j < _antenna.inputPar.Ground.coordX.size(); ++j)
 		{
@@ -738,6 +763,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 		}
 		char * cp_fp = (char *)p_fp;
 		char * cp_at = (char *)p_at;
+		char * cp_f1p = (char *)p_f1p;
 		char * cp_fmp = (char *)p_fmp;
 		char * cp_grd = (char *)p_grd;
 		{
@@ -746,29 +772,32 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 			try
 			{
 				IBPP::Statement st = IBPP::StatementFactory(*dataBase_, trInput);
-				st->Prepare("insert into INPUT_PARAMS (ID_ANTENNA, SCALEX, SCALEY, RADIUS, FRACTAL_N, FRACTAL_M, POINTS, AFFINE, MPOINTS, MPOINTS_SIZE, FEED_X, FEED_Y, S_PERMITTIVITY, S_LOSSTANGENT, S_DENSITY, S_THICKNESS, S_COORLEFTUPX, S_COORLEFTUPY, S_COORRIGHTDOWNX, S_COORRIGHTDOWNY, GROUND_SIZE, GROUND) values(?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?) returning id");
+				st->Prepare("insert into INPUT_PARAMS (ID_ANTENNA, IS_DIPOLE, SCALEX, SCALEY, RADIUS, FRACTAL_N, FRACTAL_M, POINTS, AFFINE, FPOINTS, FPOINTS_SIZE, MPOINTS, MPOINTS_SIZE, FEED_X, FEED_Y, S_PERMITTIVITY, S_LOSSTANGENT, S_DENSITY, S_THICKNESS, S_COORLEFTUPX, S_COORLEFTUPY, S_COORRIGHTDOWNX, S_COORRIGHTDOWNY, GROUND_SIZE, GROUND) values(?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?) returning id");
 				st->Set(1, idAntenna);
-				st->Set(2, _antenna.inputPar.Radiator.ScaleX);
-				st->Set(3, _antenna.inputPar.Radiator.ScaleY);
-				st->Set(4, _antenna.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
-				st->Set(5, _antenna.inputPar.Radiator.fr_N);
-				st->Set(6, _antenna.inputPar.Radiator.fr_m);
-				WriteBinDataToBlobField(st, 7, cp_fp, size_fp);
-				WriteBinDataToBlobField(st, 8, cp_at, size_at);
-				WriteBinDataToBlobField(st, 9, cp_fmp, size_fmp);
-				st->Set(10, size_fmp);
-				st->Set(11, _antenna.inputPar.Feed.FeedX);
-				st->Set(12, _antenna.inputPar.Feed.FeedY);
-				st->Set(13, _antenna.inputPar.Substrate.Permittivity);
-				st->Set(14, _antenna.inputPar.Substrate.LossTangent);
-				st->Set(15, _antenna.inputPar.Substrate.Density);
-				st->Set(16, _antenna.inputPar.Substrate.Thickness);
-				st->Set(17, _antenna.inputPar.Substrate.CoorLeftUpX);
-				st->Set(18, _antenna.inputPar.Substrate.CoorLeftUpY);
-				st->Set(19, _antenna.inputPar.Substrate.CoorRightDownX);
-				st->Set(20, _antenna.inputPar.Substrate.CoorRightDownY);
-				st->Set(21, size_grd);
-				WriteBinDataToBlobField(st, 22, cp_grd, size_grd);
+				st->Set(2, static_cast<short>(_antenna.inputPar.isDipole));
+				st->Set(3, _antenna.inputPar.Radiator.ScaleX);
+				st->Set(4, _antenna.inputPar.Radiator.ScaleY);
+				st->Set(5, _antenna.inputPar.Radiator.Radius_StripWidth_FeedLineWidth);
+				st->Set(6, _antenna.inputPar.Radiator.fr_N);
+				st->Set(7, _antenna.inputPar.Radiator.fr_m);
+				WriteBinDataToBlobField(st, 8, cp_fp, size_fp);
+				WriteBinDataToBlobField(st, 9, cp_at, size_at);
+				WriteBinDataToBlobField(st, 10, cp_f1p, size_fmp);
+				st->Set(11, size_f1p);
+				WriteBinDataToBlobField(st, 12, cp_fmp, size_fmp);
+				st->Set(13, size_fmp);
+				st->Set(14, _antenna.inputPar.Feed.FeedX);
+				st->Set(15, _antenna.inputPar.Feed.FeedY);
+				st->Set(16, _antenna.inputPar.Substrate.Permittivity);
+				st->Set(17, _antenna.inputPar.Substrate.LossTangent);
+				st->Set(18, _antenna.inputPar.Substrate.Density);
+				st->Set(19, _antenna.inputPar.Substrate.Thickness);
+				st->Set(20, _antenna.inputPar.Substrate.CoorLeftUpX);
+				st->Set(21, _antenna.inputPar.Substrate.CoorLeftUpY);
+				st->Set(22, _antenna.inputPar.Substrate.CoorRightDownX);
+				st->Set(23, _antenna.inputPar.Substrate.CoorRightDownY);
+				st->Set(24, size_grd);
+				WriteBinDataToBlobField(st, 25, cp_grd, size_grd);
 				st->Execute();
 				st->Get(1, idInputPar);
 				trInput->Commit();
@@ -782,6 +811,7 @@ int FrbrdDatabase::WriteAntennaData(Antenna &_antenna, int idExperiment)
 
 		delete[] p_fp;
 		delete[] p_at;
+		delete[] p_f1p;
 		delete[] p_fmp;
 		delete[] p_grd;
 

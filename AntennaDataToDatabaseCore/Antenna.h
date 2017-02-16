@@ -12,7 +12,7 @@ struct InputParameters
 		int fr_N;
 		int fr_m;
 		std::vector<double> fr_pT, fr_pX, fr_pY, fr_lam, fr_al;
-		std::vector<double> fr_D11, fr_D12, fr_D21, fr_D22;
+		std::vector<double> fr_D11, fr_D12, fr_D21, fr_D22, fr_typeD;
 		std::vector<double> fr_pred1X, fr_pred1Y, fr_predmX, fr_predmY;
 	} Radiator;
 	
@@ -36,10 +36,14 @@ struct InputParameters
 		std::vector<double> coordX, coordY;
 	} Ground;
 
+	bool isDipole;
+
 	bool findRADIATOR;
 	bool findFEED;
 	bool findSUBSTRATE;
 	bool findGROUND;
+	bool findIsDipole;
+	bool findTypeD;
 };
 
 struct DATA_FOR_MEMORY_USAGE
@@ -273,4 +277,5 @@ struct Experiment
 	tm date;
 	std::string comment;
 	std::vector<Experiment_Param> cycles;
+	size_t antennas_count;
 };

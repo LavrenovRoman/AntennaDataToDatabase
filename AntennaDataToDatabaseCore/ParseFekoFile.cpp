@@ -1168,7 +1168,7 @@ void ParseFekoFile::ParseFileOut(const std::string &_file, Antenna& _antenna)
 		vecS11Db.push_back(_antenna.outputPar._VEC_DATA_FOR_ONE_FREQ[i]._SCATTERING_PARAMETERS.SMagnitudeDB);
 	}
 	size_t N = vecS11.size();
-	int j = 0;
+	size_t j = 0;
 	while ((vecS11[j] > vecS11[j + 1]) && (j < N - 1)) j++;
 	_antenna.outputPar.fst_s11 = vecS11[j];
 	_antenna.outputPar.fst_w = vecW[j];
@@ -1284,6 +1284,8 @@ void ParseFekoFile::ParseFilePre(const std::string &_file, Antenna& _antenna)
 		if (!_antenna.inputPar.findFEED && vsPre.back().find("FEED") != string::npos)            { _antenna.inputPar.findFEED = true; }
 		if (!_antenna.inputPar.findSUBSTRATE && vsPre.back().find("SUBSTRATE") != string::npos)  { _antenna.inputPar.findSUBSTRATE = true; }
 		if (!_antenna.inputPar.findGROUND && vsPre.back().find("GROUND") != string::npos)        { _antenna.inputPar.findGROUND = true; }
+		if (!_antenna.inputPar.findGROUND && vsPre.back().find("isDipole") != string::npos)      { _antenna.inputPar.findIsDipole = true; }
+		if (!_antenna.inputPar.findGROUND && vsPre.back().find("typeD[]") != string::npos)       { _antenna.inputPar.findTypeD = true; }
 
 		if (_antenna.inputPar.findRADIATOR && _antenna.inputPar.findFEED &&
 			_antenna.inputPar.findSUBSTRATE && _antenna.inputPar.findGROUND &&
@@ -1313,6 +1315,23 @@ void ParseFekoFile::ParseFilePre(const std::string &_file, Antenna& _antenna)
 			if (vs[1] == "wire")	   _antenna.type = WIRE;
 			if (vs[1] == "microstrip") _antenna.type = STRIPE;
 			if (vs[1] == "plane")      _antenna.type = PLANE;
+		}
+
+		if (_antenna.inputPar.findIsDipole)
+		{
+			while (vsPre[cs].find("isDipole") == string::npos) { cs++; }
+			{
+				cs++;
+				stringstream ss(vsPre[cs]);
+				vs.clear();
+				while (ss >> word) vs.push_back(word);
+				if (vs[1] == "False") _antenna.inputPar.isDipole = false;
+				else                  _antenna.inputPar.isDipole = true;
+			}
+		}
+		else
+		{
+			_antenna.inputPar.isDipole = false;
 		}
 
 		if (_antenna.inputPar.findRADIATOR)
@@ -1397,6 +1416,36 @@ void ParseFekoFile::ParseFilePre(const std::string &_file, Antenna& _antenna)
 					}
 				}
 			}
+
+			if (_antenna.inputPar.findTypeD)
+			{
+				while (vsPre[cs].find("typeD[]") == string::npos) { cs++; }
+			{
+				_antenna.inputPar.Radiator.fr_typeD.clear();
+				while (true)
+				{
+					cs++;
+					stringstream ss(vsPre[cs]);
+					vs.clear();
+					while (ss >> word) vs.push_back(word);
+					for (size_t i = 1; i < vs.size() - 1; ++i)
+					{
+						_antenna.inputPar.Radiator.fr_typeD.push_back(stod(vs[i]));
+					}
+					if (vs.back() != "**")
+					{
+						_antenna.inputPar.Radiator.fr_typeD.push_back(stod(vs.back()));
+						break;
+					}
+				}
+			}
+			}
+			else
+			{
+				_antenna.inputPar.Radiator.fr_typeD.resize(_antenna.inputPar.Radiator.fr_N);
+				for (auto &i : _antenna.inputPar.Radiator.fr_typeD)	{i = 1;}
+			}
+
 			while (vsPre[cs].find("D11[]") == string::npos) {cs++;}
 			{
 				_antenna.inputPar.Radiator.fr_D11.clear();
