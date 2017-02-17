@@ -1265,6 +1265,8 @@ void ParseFekoFile::ParseFilePre(const std::string &_file, Antenna& _antenna)
 	_antenna.inputPar.findFEED      = false;
 	_antenna.inputPar.findSUBSTRATE = false;
 	_antenna.inputPar.findGROUND    = false;
+	_antenna.inputPar.findIsDipole  = false;
+	_antenna.inputPar.findTypeD     = false;
 
 	std::string allFile(
 		(std::istreambuf_iterator<char>(
