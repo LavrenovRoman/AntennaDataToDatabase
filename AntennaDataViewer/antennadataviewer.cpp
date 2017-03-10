@@ -365,103 +365,6 @@ void AntennaDataViewer::ClickedCalcCorr()
 		return;
 	}
 
-	/*
-	std::string request;
-
-	if (!parInsideAntenna)
-	{
-		request = "select ";
-
-		switch (selectInputPar)
-		{
-		case 0:
-			request += "scalex";
-			break;
-		case 1:
-			request += "scaley";
-			break;
-		default:
-			break;
-		}
-		request += ", ";
-
-		switch (selectOutputPar)
-		{
-		case 0:
-			request += "fst_s11";
-			break;
-		case 1:
-			request += "fst_w";
-			break;
-		default:
-			break;
-		}
-		request += " ";
-
-		request += "from output_params, input_params, antenna";
-
-		if (ui.listDBSelect->item(1)->isSelected() && IdExperiment != -1)
-		{
-			request += ", EXPERIMENT";
-		}
-
-		request += " where input_params.id_antenna = antenna.id and output_params.id_antenna = antenna.id";
-
-		if (ui.listDBSelect->item(1)->isSelected() && IdExperiment != -1)
-		{
-			request += " and antenna.ID_EXPERIMENT = EXPERIMENT.ID and EXPERIMENT.ID = ";
-			request += std::to_string(IdExperiment);
-		}
-
-		request += " order by ";
-		switch (selectInputPar)
-		{
-		case 0:
-			request += "scalex";
-			break;
-		case 1:
-			request += "scaley";
-			break;
-		default:
-			break;
-		}
-	}
-	else
-	{
-		request = "select ";
-
-		switch (selectInputPar)
-		{
-		case 0:
-			request += "frequency";
-			break;
-		default:
-			break;
-		}
-		request += ", ";
-
-		switch (selectOutputPar)
-		{
-		case 0:
-			request += "s11";
-			break;
-		default:
-			break;
-		}
-		request += " ";
-
-		request += "from SCATTERING_PARAMETERS, OUTPUT_PARAMS_FOR_ONE_FREQ, OUTPUT_PARAMS, ANTENNA where SCATTERING_PARAMETERS.ID_OUTPUT = OUTPUT_PARAMS_FOR_ONE_FREQ.id and OUTPUT_PARAMS_FOR_ONE_FREQ.ID_OUTPUT_PARAM = OUTPUT_PARAMS.id";
-
-		if (ui.listDBSelect->item(2)->isSelected() && IdAntenna != -1)
-		{
-			request += " and OUTPUT_PARAMS.ID_ANTENNA = ANTENNA.ID and ANTENNA.ID = ";
-			request += std::to_string(IdAntenna);
-		}
-	}
-
-	core.Request(request, 2, res);
-	*/
-
 	xGraphTitle = ui.listParInput->item(currentInput)->text();
 	yGraphTitle = ui.listParOutput->item(currentOutput)->text();
 
@@ -473,15 +376,32 @@ void AntennaDataViewer::ClickedCalcCorr()
 void AntennaDataViewer::SortResult()
 {
 	double equalRes = std::numeric_limits<double>::min();
-	double cnt = 1.0;
-	for (int j = res[0].size()-1; j > 0; j--)
+	int cnt = 0; 
+	double step;
+	for (int j = 1; j < res[0].size(); j++)
 	{
-		if (res[0][j] == res[0][j - 1])
+		if (equalRes == std::numeric_limits<double>::min())
 		{
-			if (equalRes == res[0][j - 1]) cnt++;
-			else cnt = 1.0;
-			res[0][j] += std::numeric_limits<double>::epsilon()*cnt;//(j + 1);
-			equalRes = res[0][j - 1];
+			if (res[0][j] == res[0][j - 1])
+			{
+				equalRes = res[0][j - 1];
+				cnt++;
+				step = res[0][j] / 1000000000000;
+				res[0][j] += step*(double)cnt;
+			}
+		}
+		else
+		{
+			if (res[0][j] == equalRes)
+			{
+				cnt++;
+				res[0][j] += step*(double)cnt;
+			}
+			else
+			{
+				equalRes = std::numeric_limits<double>::min();
+				cnt = 0;
+			}
 		}
 	}
 }
