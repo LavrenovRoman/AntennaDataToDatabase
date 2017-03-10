@@ -502,7 +502,14 @@
     <addaction name="actCopyDB"/>
     <addaction name="actDelDataDB"/>
    </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Программа Крона</string>
+    </property>
+    <addaction name="actOpenAntKrona"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_2"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -526,6 +533,11 @@
   <action name="actDelDataDB">
    <property name="text">
     <string>Удалить данные из БД</string>
+   </property>
+  </action>
+  <action name="actOpenAntKrona">
+   <property name="text">
+    <string>Открыть антенну в Кроне</string>
    </property>
   </action>
  </widget>

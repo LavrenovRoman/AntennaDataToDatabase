@@ -456,7 +456,7 @@ void AntennaDataViewer::VisibleWidget(QDialog * widget)
 void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 {
 	ui.listDBSelect->clearFocus();
-
+	
 	int selectRow = -1;
 	for (int i = 0; i<ui.listDBSelect->count(); ++i)
 	{
@@ -466,6 +466,8 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 			break;
 		}
 	}
+
+	ui.actOpenAntKrona->setEnabled(false);
 
 	switch (selectRow)
 	{
@@ -490,6 +492,7 @@ void AntennaDataViewer::DBRowChanged(QListWidgetItem* pSelectRow)
 		VisibleWidget(pSelEx);
 		break;
 	case Concrete_Ant:
+		ui.actOpenAntKrona->setEnabled(true);
 		ViewDBSelect(Concrete_Ant);
 		VisibleWidget(pSelAnt);
 		break;
@@ -643,10 +646,6 @@ void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
 {
 	if (res.size() == 2)
 	{
-		QVector<QPointF> linePixelData;
-		QVector<QCPData> scatterData;
-		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
-
 		if (event->buttons() == Qt::LeftButton)
 		{
 			if (!parInsideAntenna)
@@ -656,9 +655,9 @@ void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
 
 				selectedPoints.clear();
 
-				for (int i = 0; i < linePixelData.size(); ++i)
+				for (int i = 0; i < lineAllPixelData.size(); ++i)
 				{
-					if (selectedArea.IsInside(linePixelData[i].x(), linePixelData[i].y()))
+					if (selectedArea.IsInside(lineAllPixelData[i].x(), lineAllPixelData[i].y()))
 					{
 						selectedPoints.push_back(i);
 					}
@@ -675,10 +674,10 @@ void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
 				int changedpoint = -1;
 				double length, minL, distx, disty;
 				minL = 100000000;
-				for (int i = 0; i < linePixelData.size(); ++i)
+				for (int i = 0; i < lineAllPixelData.size(); ++i)
 				{
-					distx = event->x() - linePixelData[i].x();
-					disty = event->y() - linePixelData[i].y();
+					distx = event->x() - lineAllPixelData[i].x();
+					disty = event->y() - lineAllPixelData[i].y();
 					distx *= distx;
 					disty *= disty;
 					length = sqrt(distx + disty);
@@ -712,13 +711,13 @@ void AntennaDataViewer::CreateGraph()
 		switch (currentInput)
 		{
 		case 2:
-			for (int k = 0; k < x.size(); k++)	{ x[k] = 10 * log10(x[k]); }
+			for (int k = 0; k < x.size(); k++)	{ x[k] = 20 * log10(x[k]); }
 			break;
 		case 3:
 			for (int k = 0; k < x.size(); k++)	{ x[k] /= 1000000; }
 			break;
 		case 4:
-			for (int k = 0; k < x.size(); k++)	{ x[k] = 10 * log10(x[k]); }
+			for (int k = 0; k < x.size(); k++)	{ x[k] = 20 * log10(x[k]); }
 			break;
 		case 5:
 			for (int k = 0; k < x.size(); k++)	{ x[k] /= 1000000; }
@@ -729,13 +728,13 @@ void AntennaDataViewer::CreateGraph()
 		switch (currentOutput)
 		{
 		case 0:
-			for (int k = 0; k < y.size(); k++)	{y[k] = 10 * log10(y[k]);}
+			for (int k = 0; k < y.size(); k++)	{y[k] = 20 * log10(y[k]);}
 			break;
 		case 1:
 			for (int k = 0; k < y.size(); k++)	{y[k] /= 1000000;}
 			break;
 		case 2:
-			for (int k = 0; k < y.size(); k++)	{ y[k] = 10 * log10(y[k]); }
+			for (int k = 0; k < y.size(); k++)	{ y[k] = 20 * log10(y[k]); }
 			break;
 		case 3:
 			for (int k = 0; k < y.size(); k++)	{ y[k] /= 1000000; }
@@ -757,7 +756,7 @@ void AntennaDataViewer::CreateGraph()
 		switch (currentOutput)
 		{
 		case 0:
-			for (int k = 0; k < y.size(); k++) {y[k] = 10 * log10(y[k]); }
+			for (int k = 0; k < y.size(); k++) {y[k] = 20 * log10(y[k]); }
 			break;
 		default:
 			break;
@@ -796,15 +795,10 @@ void AntennaDataViewer::CreateGraph()
 			graphlast->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
 		}
 
-
-		QVector<QPointF> linePixelData;
-		QVector<QCPData> scatterData;
-		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
-
 		for (size_t i = 0; i < selectedPoints.size(); ++i)
 		{
-			int posx = linePixelData[selectedPoints[i]].x();
-			int posy = linePixelData[selectedPoints[i]].y();
+			int posx = lineAllPixelData[selectedPoints[i]].x();
+			int posy = lineAllPixelData[selectedPoints[i]].y();
 			int centerx = ui.PlotWidget->size().width() / 2;  //350
 			int centery = ui.PlotWidget->size().height() / 2; //300;
 			double dx = posx - centerx;
@@ -873,26 +867,22 @@ void AntennaDataViewer::CreateGraph()
 	}
 	if (selectedY != -1.0)
 	{
-		QVector<QPointF> linePixelData;
-		QVector<QCPData> scatterData;
-		ui.PlotWidget->graph(0)->getLinePlotData(&linePixelData, &scatterData);
-
 		int minY = 1000;
-		for (int i = 0; i < linePixelData.size(); ++i)
+		for (int i = 0; i < lineAllPixelData.size(); ++i)
 		{
-			if (linePixelData[i].y() < minY)
-				minY = linePixelData[i].y();
+			if (lineAllPixelData[i].y() < minY)
+				minY = lineAllPixelData[i].y();
 		}
 
 		if (selectedY > minY)
 		{
 			int c = 0;
-			while (c < linePixelData.size())
+			while (c < lineAllPixelData.size())
 			{
 				int p1=-1, p2=-1, p3=-1, p4 = -1;
-				for (size_t i = c; i < linePixelData.size(); ++i, ++c)
+				for (size_t i = c; i < lineAllPixelData.size(); ++i, ++c)
 				{
-					if (linePixelData[i].y() < selectedY) p1 = i;
+					if (lineAllPixelData[i].y() < selectedY) p1 = i;
 					else
 					{
 						p2 = i;
@@ -900,9 +890,9 @@ void AntennaDataViewer::CreateGraph()
 						break;
 					}
 				}
-				for (size_t i = c; i < linePixelData.size(); ++i, ++c)
+				for (size_t i = c; i < lineAllPixelData.size(); ++i, ++c)
 				{
-					if (linePixelData[i].y() > selectedY) p3 = i;
+					if (lineAllPixelData[i].y() > selectedY) p3 = i;
 					else
 					{
 						p4 = i;
@@ -912,17 +902,17 @@ void AntennaDataViewer::CreateGraph()
 				if (p3 != -1 && p2 != -1 && p1 != -1)
 				{
 					double x1, x2;
-					x1 = (linePixelData[p1].x()*linePixelData[p2].y() - linePixelData[p2].x()*linePixelData[p1].y() + selectedY*(linePixelData[p2].x() - linePixelData[p1].x())) / (linePixelData[p2].y() - linePixelData[p1].y());
+					x1 = (lineAllPixelData[p1].x()*lineAllPixelData[p2].y() - lineAllPixelData[p2].x()*lineAllPixelData[p1].y() + selectedY*(lineAllPixelData[p2].x() - lineAllPixelData[p1].x())) / (lineAllPixelData[p2].y() - lineAllPixelData[p1].y());
 					if (p4 != -1)
 					{
-						x2 = (linePixelData[p4].x()*linePixelData[p3].y() - linePixelData[p3].x()*linePixelData[p4].y() + selectedY*(linePixelData[p3].x() - linePixelData[p4].x())) / (linePixelData[p3].y() - linePixelData[p4].y());
+						x2 = (lineAllPixelData[p4].x()*lineAllPixelData[p3].y() - lineAllPixelData[p3].x()*lineAllPixelData[p4].y() + selectedY*(lineAllPixelData[p3].x() - lineAllPixelData[p4].x())) / (lineAllPixelData[p3].y() - lineAllPixelData[p4].y());
 					}
 					else
 					{
 						x2 = ui.PlotWidget->size().width();
 					}
 
-					double U = (stdx[p2] - stdx[p1])*(x2 - x1) / (linePixelData[p2].x() - linePixelData[p1].x());
+					double U = (stdx[p2] - stdx[p1])*(x2 - x1) / (lineAllPixelData[p2].x() - lineAllPixelData[p1].x());
 
 					QPointF posF((x2+x1)/2, selectedY);
 					QString pointtext = QString::fromLocal8Bit("bw = ") + QString::number(U);
@@ -1016,4 +1006,6 @@ void AntennaDataViewer::CreateGraph()
 
 	//И перерисуем график на нашем widget
     ui.PlotWidget->replot();
+
+	graph0->getDataPosition(x, y, &lineAllPixelData);
 }

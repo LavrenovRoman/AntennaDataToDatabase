@@ -2608,6 +2608,7 @@ public: // WAS protected (change By ROMAN)
   void getPlotData(QVector<QPointF> *lineData, QVector<QCPData> *scatterData) const;
   void getScatterPlotData(QVector<QCPData> *scatterData) const;
   void getLinePlotData(QVector<QPointF> *linePixelData, QVector<QCPData> *scatterData) const;
+  void getDataPosition(QVector<double> x, QVector<double> y, QVector<QPointF> *lineAllPixelData) const;
   void getStepLeftPlotData(QVector<QPointF> *linePixelData, QVector<QCPData> *scatterData) const;
   void getStepRightPlotData(QVector<QPointF> *linePixelData, QVector<QCPData> *scatterData) const;
   void getStepCenterPlotData(QVector<QPointF> *linePixelData, QVector<QCPData> *scatterData) const;

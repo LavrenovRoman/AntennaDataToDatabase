@@ -83,6 +83,8 @@ private:
 
 	std::string dirDB;
 
+	QVector<QPointF> lineAllPixelData;
+
 private slots:
 	void Init();
 	void ClickedCalcCorr();

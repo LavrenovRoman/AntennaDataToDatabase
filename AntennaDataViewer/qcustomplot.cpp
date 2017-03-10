@@ -15244,6 +15244,32 @@ void QCPGraph::getLinePlotData(QVector<QPointF> *linePixelData, QVector<QCPData>
   }
 }
 
+void QCPGraph::getDataPosition(QVector<double> x, QVector<double> y, QVector<QPointF> *lineAllPixelData) const
+{
+	QCPAxis *keyAxis = mKeyAxis.data();
+	QCPAxis *valueAxis = mValueAxis.data();
+	
+	lineAllPixelData->resize(x.size());
+
+	// transform lineData points to pixels:
+	if (keyAxis->orientation() == Qt::Vertical)
+	{
+		for (int i = 0; i < x.size(); ++i)
+		{
+			(*lineAllPixelData)[i].setX(valueAxis->coordToPixel(y.at(i)));
+			(*lineAllPixelData)[i].setY(keyAxis->coordToPixel(x.at(i)));
+		}
+	}
+	else // key axis is horizontal
+	{
+		for (int i = 0; i < x.size(); ++i)
+		{
+			(*lineAllPixelData)[i].setX(keyAxis->coordToPixel(x.at(i)));
+			(*lineAllPixelData)[i].setY(valueAxis->coordToPixel(y.at(i)));
+		}
+	}
+}
+
 /*!
   \internal
   Places the raw data points needed for a step plot with left oriented steps in \a lineData.
