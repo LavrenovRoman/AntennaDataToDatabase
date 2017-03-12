@@ -155,6 +155,7 @@ int Core::OpenDirectory(const std::string &strdir, int &cntOutFiles, int &cntPre
 			while (FindNextFile(hFind, &fileData));
 		}
 		FindClose(hFind);
+
 		for (size_t i = 0; i < min(sOuts.size(), sPres.size()); ++i)
 		{
 			if (sOuts[i].substr(0, sOuts[i].size() - 4) != sPres[i].substr(0, sPres[i].size() - 4))
@@ -171,6 +172,9 @@ int Core::OpenDirectory(const std::string &strdir, int &cntOutFiles, int &cntPre
 				}
 			}
 		}
+
+		OrderFiles();
+
 		sOuts_paths.resize(sOuts.size());
 		if (sOuts.size() > 0)
 		{
@@ -243,6 +247,41 @@ int Core::ReadFiles()
 	}
 	cout << "Error! There are no some out or pre files" << endl;
 	return -1;
+}
+
+void Core::OrderFiles()
+{
+	if (sOuts.empty() || sPres.empty()) return;
+
+	std::vector<std::string> tempOuts, tempPres;
+	int maxId = 0;
+	std::string tempStr;
+	for (size_t i = 0; i < sOuts.size(); ++i)
+	{
+		tempStr = sOuts[i].substr(0, sOuts[i].size() - 4);
+		tempStr = tempStr.substr(4, tempStr.size());
+		if (maxId < stoi(tempStr))
+			maxId = stoi(tempStr);
+	}
+	tempOuts.resize(maxId + 1);
+	tempPres.resize(maxId + 1);
+	for (size_t i = 0; i < sOuts.size(); ++i)
+	{
+		tempStr = sOuts[i].substr(0, sOuts[i].size() - 4);
+		tempStr = tempStr.substr(4, tempStr.size());
+		tempOuts[stoi(tempStr)] = sOuts[i];
+		tempPres[stoi(tempStr)] = sPres[i];
+	}
+	sOuts.clear();
+	sOuts.reserve(tempOuts.size());
+	sPres.clear();
+	sPres.reserve(tempPres.size());
+	for (size_t i = 0; i < tempOuts.size(); ++i)
+	{
+		if (tempOuts[i].empty()) continue;
+		sOuts.push_back(tempOuts[i]);
+		sPres.push_back(tempPres[i]);
+	}
 }
 
 int Core::PrepareExperimentBeforeWrite()

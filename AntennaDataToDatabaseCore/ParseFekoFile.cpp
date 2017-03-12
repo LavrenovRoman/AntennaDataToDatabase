@@ -1205,6 +1205,7 @@ void ParseFekoFile::ParseFileOut(const std::string &_file, Antenna& _antenna)
 			a = vecW[i] - vecS11Db[i] * k;
 			leftFR = k * maxDB + a;
 			i = fst_min;
+			if (i == vecS11Db.size() - 1) i--;
 			while ((i < vecS11Db.size() - 2) && (vecS11Db[i] < maxDB)) { i++; };
 			k = (vecW[i + 1] - vecW[i]) / (vecS11Db[i + 1] - vecS11Db[i]);
 			a = vecW[i] - vecS11Db[i] * k;
@@ -1224,6 +1225,7 @@ void ParseFekoFile::ParseFileOut(const std::string &_file, Antenna& _antenna)
 			a = vecW[i] - vecS11Db[i] * k;
 			leftFR = k * maxDB + a;
 			i = scnd_min;
+			if (i == vecS11Db.size() - 1) i--;
 			while ((i < vecS11Db.size() - 2) && (vecS11Db[i] < maxDB)) { i++; };
 			k = (vecW[i + 1] - vecW[i]) / (vecS11Db[i + 1] - vecS11Db[i]);
 			a = vecW[i] - vecS11Db[i] * k;
@@ -1243,7 +1245,8 @@ void ParseFekoFile::ParseFileOut(const std::string &_file, Antenna& _antenna)
 			a = vecW[i] - vecS11Db[i] * k;
 			leftFR = k * maxDB + a;
 			i = third_min;
-			while ((i < vecS11Db.size() - 2) && (vecS11Db[i] < maxDB)) { i++; };
+			if (i == vecS11Db.size() - 1) i--;
+			while ((i < (vecS11Db.size() - 2)) && (vecS11Db[i] < maxDB)) { i++; };
 			k = (vecW[i + 1] - vecW[i]) / (vecS11Db[i + 1] - vecS11Db[i]);
 			a = vecW[i] - vecS11Db[i] * k;
 			rightFR = k * maxDB + a;

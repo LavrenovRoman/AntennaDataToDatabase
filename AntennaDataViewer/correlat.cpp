@@ -1,13 +1,13 @@
 #include "correlat.h"
 #include "math.h"
 
-double Correlat::koefKorr(const std::vector<double> &x, const std::vector<double> &y)
+double Correlat::koefKorr(std::vector<double> &x, std::vector<double> &y)
 {
     if (x.size() != y.size()) return 0.0;
     double x_ = 0.0;
     double y_ = 0.0;
     int n = x.size();
-	for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         x_ += x[i];
         y_ += y[i];
@@ -18,7 +18,7 @@ double Correlat::koefKorr(const std::vector<double> &x, const std::vector<double
     double xy = 0;
     double x2 = 0;
     double y2 = 0;
-	for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         double x1 = x[i] - x_;
         double y1 = y[i] - y_;
@@ -30,14 +30,14 @@ double Correlat::koefKorr(const std::vector<double> &x, const std::vector<double
 }
 
 // y = a + b * x
-void Correlat::RegressLine(const std::vector<double> &x, const std::vector<double> &y, double& a, double& b, double& eps, double& A)
+void Correlat::RegressLine(std::vector<double> &x, std::vector<double> &y, double& a, double& b, double& eps, double& A)
 {
     double x_ = 0.0;
     double y_ = 0.0;
     double xy_ = 0.0;
     double x2_ = 0.0;
     int n = x.size();
-	for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         x_ += x[i];
         y_ += y[i];
@@ -54,7 +54,7 @@ void Correlat::RegressLine(const std::vector<double> &x, const std::vector<doubl
 
     eps = 0.0;
     A = 0.0;
-	for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         double pogr = a + b * x[i] - y[i];
         eps += pogr * pogr;
@@ -66,7 +66,7 @@ void Correlat::RegressLine(const std::vector<double> &x, const std::vector<doubl
 }
 
 // y = a0 + a1 * x + a2 * x * x
-void Correlat::RegressParabol(const std::vector<double> &x, const std::vector<double> &y, double& a0, double& a1, double& a2, double& eps, double& A)
+void Correlat::RegressParabol(std::vector<double> &x, std::vector<double> &y, double& a0, double& a1, double& a2, double& eps, double& A)
 {
     double Sx = 0.0;
     double Sx2 = 0.0;
@@ -75,8 +75,8 @@ void Correlat::RegressParabol(const std::vector<double> &x, const std::vector<do
     double Sy = 0.0;
     double Sxy = 0.0;
     double Sx2y = 0.0;
-	size_t n = x.size();
-	for (size_t i = 0; i < n; i++)
+    int n = x.size();
+    for (int i = 0; i < n; i++)
     {
         double xx = x[i];
         Sx += xx;
@@ -105,7 +105,7 @@ void Correlat::RegressParabol(const std::vector<double> &x, const std::vector<do
     Sy /= n;
     eps = 0.0;
     A = 0.0;
-	for (size_t i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         double pogr = a0 + a1 * x[i] + a2 * x[i] * x[i] - y[i];
         eps += pogr * pogr;
@@ -118,14 +118,14 @@ void Correlat::RegressParabol(const std::vector<double> &x, const std::vector<do
 }
 
 // y = a + b * ln x
-void Correlat::RegressLn(const std::vector<double> &x, const std::vector<double> &y, double& a, double& b)
+void Correlat::RegressLn(std::vector<double> &x, std::vector<double> &y, double& a, double& b)
 {
     double lnx_ = 0.0;
     double y_ = 0.0;
     double lnxy_ = 0.0;
     double lnx2_ = 0.0;
-	size_t n = x.size();
-	for (size_t i = 0; i < n; i++)
+    int n = x.size();
+    for (int i = 0; i < n; i++)
     {
         double lnx = log(x[i]);
         lnx_ += lnx;

@@ -43,6 +43,7 @@ private:
 	std::string pathDonor, pathRecipient, pathCurrentDB, filesDirectory;
 
 	void SetPaths(const std::string &spath);
+	void OrderFiles();
 };
 
 #endif // CORE_H

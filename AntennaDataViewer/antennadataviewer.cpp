@@ -3,7 +3,6 @@
 #include <tchar.h>
 #include <iostream>
 #include <math.h>
-#include "correlat.h"
 #include "Antenna.h"
 
 using namespace std;
@@ -283,16 +282,16 @@ void AntennaDataViewer::ClickedCalcCorr()
 					res[0].push_back(_ant.inputPar.Radiator.ScaleY);
 					break;
 				case 2:
-					res[0].push_back(_ant.outputPar.fst_s11);
+					res[0].push_back(20 * log10(_ant.outputPar.fst_s11));
 					break;
 				case 3:
-					res[0].push_back(_ant.outputPar.fst_w);
+					res[0].push_back(_ant.outputPar.fst_w / 1000000);
 					break;
 				case 4:
-					res[0].push_back(minS11);
+					res[0].push_back(20 * log10(minS11));
 					break;
 				case 5:
-					res[0].push_back(minS11W);
+					res[0].push_back(minS11W / 1000000);
 					break;
 				default:
 					break;
@@ -300,16 +299,16 @@ void AntennaDataViewer::ClickedCalcCorr()
 				switch (currentOutput)
 				{
 				case 0:
-					res[1].push_back(_ant.outputPar.fst_s11);
+					res[1].push_back(20 * log10(_ant.outputPar.fst_s11));
 					break;
 				case 1:
-					res[1].push_back(_ant.outputPar.fst_w);
+					res[1].push_back(_ant.outputPar.fst_w / 1000000);
 					break;
 				case 2:
-					res[1].push_back(minS11);
+					res[1].push_back(20 * log10(minS11));
 					break;
 				case 3:
-					res[1].push_back(minS11W);
+					res[1].push_back(minS11W / 1000000);
 					break;
 				default:
 					break;
@@ -331,7 +330,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 					switch (currentInput)
 					{
 					case 0:
-						res[0].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency);
+						res[0].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency / 1000000);
 						break;
 					default:
 						break;
@@ -339,7 +338,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 					switch (currentOutput)
 					{
 					case 0:
-						res[1].push_back(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._SCATTERING_PARAMETERS.S11);
+						res[1].push_back(20 * log10(_ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._SCATTERING_PARAMETERS.S11));
 						break;
 					default:
 						break;
@@ -350,7 +349,6 @@ void AntennaDataViewer::ClickedCalcCorr()
 	}
 
 	SortResult(0, res[0].size() - 1);
-	SortResult();
 
 	if (res[0].size() < 2 || res[1].size() < 2)
 	{
@@ -364,6 +362,14 @@ void AntennaDataViewer::ClickedCalcCorr()
 		}
 		return;
 	}
+
+	double korr = corr.koefKorr(res[0], res[1]);
+	ui.leCorrLine->setText(QString::number(korr));
+
+	corr.RegressLine(res[0], res[1], RL_a, RL_b, RL_eps, RL_A);
+	corr.RegressParabol(res[0], res[1], RP_a, RP_b, RP_c, RP_eps, RP_A);
+
+	SortResult();
 
 	xGraphTitle = ui.listParInput->item(currentInput)->text();
 	yGraphTitle = ui.listParOutput->item(currentOutput)->text();
@@ -706,65 +712,9 @@ void AntennaDataViewer::CreateGraph()
 	
 	x = QVector<double>::fromStdVector(res[0]);
 	y = QVector<double>::fromStdVector(res[1]);
-	if (!parInsideAntenna)
-	{
-		switch (currentInput)
-		{
-		case 2:
-			for (int k = 0; k < x.size(); k++)	{ x[k] = 20 * log10(x[k]); }
-			break;
-		case 3:
-			for (int k = 0; k < x.size(); k++)	{ x[k] /= 1000000; }
-			break;
-		case 4:
-			for (int k = 0; k < x.size(); k++)	{ x[k] = 20 * log10(x[k]); }
-			break;
-		case 5:
-			for (int k = 0; k < x.size(); k++)	{ x[k] /= 1000000; }
-			break;
-		default:
-			break;
-		}
-		switch (currentOutput)
-		{
-		case 0:
-			for (int k = 0; k < y.size(); k++)	{y[k] = 20 * log10(y[k]);}
-			break;
-		case 1:
-			for (int k = 0; k < y.size(); k++)	{y[k] /= 1000000;}
-			break;
-		case 2:
-			for (int k = 0; k < y.size(); k++)	{ y[k] = 20 * log10(y[k]); }
-			break;
-		case 3:
-			for (int k = 0; k < y.size(); k++)	{ y[k] /= 1000000; }
-			break;
-		default:
-			break;
-		}
-	}
-	else
-	{
-		switch (currentInput)
-		{
-		case 0:
-			for (int k = 0; k < x.size(); k++) {x[k] /= 1000000;}
-			break;
-		default:
-			break;
-		}
-		switch (currentOutput)
-		{
-		case 0:
-			for (int k = 0; k < y.size(); k++) {y[k] = 20 * log10(y[k]); }
-			break;
-		default:
-			break;
-		}
-	}
  
-	vector<double> stdx = x.toStdVector();
-	vector<double> stdy = y.toStdVector();
+	const vector<double> &stdx = res[0];
+	const vector<double> &stdy = res[1];
 
 	ui.PlotWidget->clearGraphs();//Если нужно, но очищаем все графики
     //Добавляем один график в widget
@@ -959,17 +909,10 @@ void AntennaDataViewer::CreateGraph()
     ui.PlotWidget->xAxis->setRange(minx, maxx);//Для оси Ox
     ui.PlotWidget->yAxis->setRange(miny, maxy);//Для оси Oy
  
-    Correlat corr;
-	double korr = corr.koefKorr(stdx, stdy);
-	ui.leCorrLine->setText(QString::number(korr));
-
-	double a, b, c, eps, A;
-	
-	corr.RegressLine(stdx, stdy, a, b, eps, A);
-	ui.leCorrLineA->setText(QString::number(a));
-	ui.leCorrLineB->setText(QString::number(b));
-	ui.leCorrLineEPS->setText(QString::number(eps));
-	ui.leCorrLineDlt->setText(QString::number(A));
+	ui.leCorrLineA->setText(QString::number(RL_a));
+	ui.leCorrLineB->setText(QString::number(RL_b));
+	ui.leCorrLineEPS->setText(QString::number(RL_eps));
+	ui.leCorrLineDlt->setText(QString::number(RL_A));
 	if (ui.cbLine->isChecked())
 	{
 		ui.PlotWidget->addGraph();
@@ -978,17 +921,16 @@ void AntennaDataViewer::CreateGraph()
 		for (size_t i=0; i<=100; i++)
 		{
 			xL.push_back(minx + (maxx-minx)*i/100);
-			yL.push_back(a + xL[i]*b);
+			yL.push_back(RL_a + xL[i] * RL_b);
 		}
 		ui.PlotWidget->graph(ui.PlotWidget->graphCount()-1)->setData(xL, yL);
 	}
 
-	corr.RegressParabol(stdx, stdy, a, b, c, eps, A);
-	ui.leCorrParA->setText(QString::number(a));
-	ui.leCorrParB->setText(QString::number(b));
-	ui.leCorrParC->setText(QString::number(c));
-	ui.leCorrParEPS->setText(QString::number(eps));
-	ui.leCorrParDlt->setText(QString::number(A));
+	ui.leCorrParA->setText(QString::number(RP_a));
+	ui.leCorrParB->setText(QString::number(RP_b));
+	ui.leCorrParC->setText(QString::number(RP_c));
+	ui.leCorrParEPS->setText(QString::number(RP_eps));
+	ui.leCorrParDlt->setText(QString::number(RP_A));
 
 	if (ui.cbPar->isChecked())
 	{
@@ -999,7 +941,7 @@ void AntennaDataViewer::CreateGraph()
 		for (size_t i=0; i<=100; i++)
 		{
 			xL.push_back(minx + (maxx-minx)*i/100);
-			yL.push_back(a + xL[i]*b + xL[i]*xL[i]*c);
+			yL.push_back(RP_a + xL[i] * RP_b + xL[i] * xL[i] * RP_c);
 		}
 		ui.PlotWidget->graph(ui.PlotWidget->graphCount()-1)->setData(xL, yL);
 	}

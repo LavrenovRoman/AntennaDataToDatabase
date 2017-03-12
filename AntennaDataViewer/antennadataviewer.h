@@ -9,6 +9,7 @@
 #include "selectexperiment.h"
 #include "deleteexperiment.h"
 #include "selectexperiments.h"
+#include "correlat.h"
 
 struct SelectedArea
 {
@@ -84,6 +85,10 @@ private:
 	std::string dirDB;
 
 	QVector<QPointF> lineAllPixelData;
+
+	Correlat corr;	
+	double RL_a, RL_b, RL_eps, RL_A;
+	double RP_a, RP_b, RP_c, RP_eps, RP_A;
 
 private slots:
 	void Init();
