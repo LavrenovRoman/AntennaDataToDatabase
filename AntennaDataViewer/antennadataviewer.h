@@ -65,6 +65,8 @@ private:
 	SelectedAntennas * pSelExAnt = nullptr;
 	SelectAll *pSelAll = nullptr;
 
+	QMenu * contextMenu = nullptr;
+
 	std::vector<std::vector<double>> res;
 	QString xGraphTitle, yGraphTitle; 
 
@@ -112,6 +114,7 @@ private slots:
 	void CopyDB();
 	void DelFromDB();
 	void ResetWidgets();
+	void CreateTextFile();
 };
 
 #endif // ANTENNADATAVIEWER_H

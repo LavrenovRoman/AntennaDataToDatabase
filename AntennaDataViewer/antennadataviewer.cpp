@@ -4,6 +4,7 @@
 #include <iostream>
 #include <math.h>
 #include "Antenna.h"
+#include <fstream>
 
 using namespace std;
 
@@ -38,6 +39,9 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	ui.listDBSelect->setSelectionMode(QListWidget::MultiSelection);
 	ui.butCorr->setEnabled(true);
 
+	contextMenu = new QMenu(this);
+	contextMenu->addAction(QString::fromLocal8Bit("Создать файл"));
+
 	connect(ui.butCorr, SIGNAL(clicked()), this, SLOT(ClickedCalcCorr()));
 	connect(ui.cbLine, SIGNAL(clicked()), this, SLOT(CreateGraph()));
 	connect(ui.cbPar, SIGNAL(clicked()), this, SLOT(CreateGraph()));
@@ -48,6 +52,8 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	connect(ui.actChangeDB, SIGNAL(triggered()), this, SLOT(ChangeDB()));
 	connect(ui.actCopyDB, SIGNAL(triggered()), this, SLOT(CopyDB()));
 	connect(ui.actDelDataDB, SIGNAL(triggered()), this, SLOT(DelFromDB()));
+
+	connect(contextMenu, SIGNAL(triggered(QAction*)), this, SLOT(CreateTextFile())); // SLOT(slotActivated(QAction*)));
 
 	QStringList selectPars;
 	selectPars << QString::fromLocal8Bit("Поиск по всей базе данных");
@@ -178,6 +184,8 @@ void AntennaDataViewer::CreateLists()
 	{
 		inputPars << QString::fromLocal8Bit("Масштаб по Х");
 		inputPars << QString::fromLocal8Bit("Масштаб по Y");
+		inputPars << QString::fromLocal8Bit("Габарит по Х (м.)");
+		inputPars << QString::fromLocal8Bit("Габарит по Y (м.)");
 		inputPars << QString::fromLocal8Bit("Значение S11 первого минимума (dB)");
 		inputPars << QString::fromLocal8Bit("Частота первого минимума (МГц)");
 		inputPars << QString::fromLocal8Bit("Значение S11 глобального минимума (dB)");
@@ -211,13 +219,14 @@ void AntennaDataViewer::CreateLists()
 
 AntennaDataViewer::~AntennaDataViewer()
 {
-	if (pSelAll   != nullptr) delete pSelAll;
-	if (pSelEx    != nullptr) delete pSelEx;   
-	if (pSelExs   != nullptr) delete pSelExs;  
-	if (pSelAnt   != nullptr) delete pSelAnt;  
-	if (pSelExAnt != nullptr) delete pSelExAnt;
-	if (pDelEx    != nullptr) delete pDelEx;   
-	if (pCopyDB   != nullptr) delete pCopyDB;  
+	if (pSelAll     != nullptr) delete pSelAll;
+	if (pSelEx      != nullptr) delete pSelEx;   
+	if (pSelExs     != nullptr) delete pSelExs;  
+	if (pSelAnt     != nullptr) delete pSelAnt;  
+	if (pSelExAnt   != nullptr) delete pSelExAnt;
+	if (pDelEx      != nullptr) delete pDelEx;   
+	if (pCopyDB     != nullptr) delete pCopyDB;
+	if (contextMenu != nullptr) delete contextMenu;
 }
 
 void AntennaDataViewer::ClickedCalcCorr()
@@ -259,8 +268,39 @@ void AntennaDataViewer::ClickedCalcCorr()
 				ViewDataExp vde(id_ex, pSelAll->GetAntsID()->at(i).at(j));
 				viewDataExp.push_back(vde);
 
+				double sizeX, sizeY;
+				if (currentInput == 2)
+				{
+					double tx;
+					double maxx = -1*std::numeric_limits<double>::max();
+					double minx = std::numeric_limits<double>::max();
+					for (size_t i = 0; i < _ant.inputPar.Radiator.fr_predmX.size(); ++i)
+					{
+						tx = _ant.inputPar.Radiator.fr_predmX.at(i);
+						if (tx < minx) minx = tx;
+						if (tx > maxx) maxx = tx;
+					}
+					sizeX = maxx - minx;
+					sizeX *= _ant.inputPar.Radiator.ScaleX;
+				}
+				if (currentInput == 3)
+				{
+					double ty;
+					double maxy = -1 * std::numeric_limits<double>::max();
+					double miny = std::numeric_limits<double>::max();
+					for (size_t i = 0; i < _ant.inputPar.Radiator.fr_predmY.size(); ++i)
+					{
+						ty = _ant.inputPar.Radiator.fr_predmY.at(i);
+						if (ty < miny) miny = ty;
+						if (ty > maxy) maxy = ty;
+					}
+					sizeY = maxy - miny;
+					sizeY *= _ant.inputPar.Radiator.ScaleY;
+				}
+
+
 				double minS11, minS11W;
-				if (currentOutput == 2 || currentOutput == 3 || currentInput == 4 || currentInput == 5)
+				if (currentOutput == 2 || currentOutput == 3 || currentInput == 6 || currentInput == 7)
 				{
 					minS11 = 1000000;
 					for (size_t k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
@@ -282,15 +322,21 @@ void AntennaDataViewer::ClickedCalcCorr()
 					res[0].push_back(_ant.inputPar.Radiator.ScaleY);
 					break;
 				case 2:
-					res[0].push_back(20 * log10(_ant.outputPar.fst_s11));
+					res[0].push_back(sizeX);
 					break;
 				case 3:
-					res[0].push_back(_ant.outputPar.fst_w / 1000000);
+					res[0].push_back(sizeY);
 					break;
 				case 4:
-					res[0].push_back(20 * log10(minS11));
+					res[0].push_back(20 * log10(_ant.outputPar.fst_s11));
 					break;
 				case 5:
+					res[0].push_back(_ant.outputPar.fst_w / 1000000);
+					break;
+				case 6:
+					res[0].push_back(20 * log10(minS11));
+					break;
+				case 7:
 					res[0].push_back(minS11W / 1000000);
 					break;
 				default:
@@ -347,9 +393,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 			}
 		}
 	}
-
-	SortResult(0, res[0].size() - 1);
-
+	
 	if (res[0].size() < 2 || res[1].size() < 2)
 	{
 		if (res[0].size() == 0 || res[1].size() == 0)
@@ -362,6 +406,8 @@ void AntennaDataViewer::ClickedCalcCorr()
 		}
 		return;
 	}
+	
+	SortResult(0, res[0].size() - 1);
 
 	double korr = corr.koefKorr(res[0], res[1]);
 	ui.leCorrLine->setText(QString::number(korr));
@@ -377,6 +423,16 @@ void AntennaDataViewer::ClickedCalcCorr()
 	selectedPoints.clear();
 
 	CreateGraph();
+
+	ui.leCorrLineA->setText(QString::number(RL_a));
+	ui.leCorrLineB->setText(QString::number(RL_b));
+	ui.leCorrLineEPS->setText(QString::number(RL_eps));
+	ui.leCorrLineDlt->setText(QString::number(RL_A));
+	ui.leCorrParA->setText(QString::number(RP_a));
+	ui.leCorrParB->setText(QString::number(RP_b));
+	ui.leCorrParC->setText(QString::number(RP_c));
+	ui.leCorrParEPS->setText(QString::number(RP_eps));
+	ui.leCorrParDlt->setText(QString::number(RP_A));
 }
 
 void AntennaDataViewer::SortResult()
@@ -646,6 +702,10 @@ void AntennaDataViewer::PlotMouseRelease(QMouseEvent *event)
 			}
 		}
 	}
+	if (event->button() == Qt::RightButton && !res.empty() && !res[0].empty() && !res[1].empty())
+	{
+		contextMenu->exec(event->globalPos());
+	}
 }
 
 void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
@@ -660,6 +720,7 @@ void AntennaDataViewer::PlotMouseMove(QMouseEvent *event)
 				selectedArea.Corner2Y = event->y();
 
 				selectedPoints.clear();
+				selectedPoints.reserve(lineAllPixelData.size());
 
 				for (int i = 0; i < lineAllPixelData.size(); ++i)
 				{
@@ -732,28 +793,32 @@ void AntennaDataViewer::CreateGraph()
 
 	if (!selectedPoints.empty())
 	{
+		QVector<double> x1, y1; //Массивы координат точек
+		x1.resize(selectedPoints.size());
+		y1.resize(selectedPoints.size());
 		for (size_t i = 0; i < selectedPoints.size(); ++i)
 		{
-			ui.PlotWidget->addGraph();
-			QVector<double> x1, y1; //Массивы координат точек
-			x1.push_back(stdx[selectedPoints[i]]);
-			y1.push_back(stdy[selectedPoints[i]]);
-			QCPGraph * graphlast = ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1);
-			graphlast->setData(x1, y1);
-			graphlast->setPen(QColor(50, 50, 50, 255));//задаем цвет точки
-			graphlast->setLineStyle(QCPGraph::lsNone);//убираем линии
-			graphlast->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+			x1[i] = stdx[selectedPoints[i]];
+			y1[i] = stdy[selectedPoints[i]];
 		}
-
+		ui.PlotWidget->addGraph();
+		QCPGraph * graphlast = ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1);
+		graphlast->setData(x1, y1);
+		graphlast->setPen(QColor(50, 50, 50, 255));//задаем цвет точки
+		graphlast->setLineStyle(QCPGraph::lsNone);//убираем линии
+		graphlast->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+		
+		int posx, posy, centerx, centery;
+		double dx, dy, dlt;
 		for (size_t i = 0; i < selectedPoints.size(); ++i)
 		{
-			int posx = lineAllPixelData[selectedPoints[i]].x();
-			int posy = lineAllPixelData[selectedPoints[i]].y();
-			int centerx = ui.PlotWidget->size().width() / 2;  //350
-			int centery = ui.PlotWidget->size().height() / 2; //300;
-			double dx = posx - centerx;
-			double dy = posy - centery;
-			double dlt = sqrt((dx*dx) + (dy*dy));
+			posx = lineAllPixelData[selectedPoints[i]].x();
+			posy = lineAllPixelData[selectedPoints[i]].y();
+			centerx = ui.PlotWidget->size().width() / 2;  //350
+			centery = ui.PlotWidget->size().height() / 2; //300;
+			dx = posx - centerx;
+			dy = posy - centery;
+			dlt = sqrt((dx*dx) + (dy*dy));
 			if (dx == 0 && dy == 0)
 			{
 				dx = 1 / sqrt(2);
@@ -908,46 +973,74 @@ void AntennaDataViewer::CreateGraph()
 
     ui.PlotWidget->xAxis->setRange(minx, maxx);//Для оси Ox
     ui.PlotWidget->yAxis->setRange(miny, maxy);//Для оси Oy
- 
-	ui.leCorrLineA->setText(QString::number(RL_a));
-	ui.leCorrLineB->setText(QString::number(RL_b));
-	ui.leCorrLineEPS->setText(QString::number(RL_eps));
-	ui.leCorrLineDlt->setText(QString::number(RL_A));
-	if (ui.cbLine->isChecked())
-	{
-		ui.PlotWidget->addGraph();
-		ui.PlotWidget->graph(ui.PlotWidget->graphCount()-1)->setPen(QPen(Qt::blue)); // line color red for second graph
-		QVector<double> xL, yL;
-		for (size_t i=0; i<=100; i++)
-		{
-			xL.push_back(minx + (maxx-minx)*i/100);
-			yL.push_back(RL_a + xL[i] * RL_b);
-		}
-		ui.PlotWidget->graph(ui.PlotWidget->graphCount()-1)->setData(xL, yL);
-	}
 
-	ui.leCorrParA->setText(QString::number(RP_a));
-	ui.leCorrParB->setText(QString::number(RP_b));
-	ui.leCorrParC->setText(QString::number(RP_c));
-	ui.leCorrParEPS->setText(QString::number(RP_eps));
-	ui.leCorrParDlt->setText(QString::number(RP_A));
-
-	if (ui.cbPar->isChecked())
+	QVector<double> xL;
+	if (ui.cbLine->isChecked() || ui.cbPar->isChecked())
 	{
-		ui.PlotWidget->addGraph();
-		ui.PlotWidget->graphCount();
-		ui.PlotWidget->graph(ui.PlotWidget->graphCount()-1)->setPen(QPen(Qt::green)); // line color red for second graph
-		QVector<double> xL, yL;
-		for (size_t i=0; i<=100; i++)
+		xL.resize(101);
+		for (size_t i = 0; i <= 100; i++)
 		{
-			xL.push_back(minx + (maxx-minx)*i/100);
-			yL.push_back(RP_a + xL[i] * RP_b + xL[i] * xL[i] * RP_c);
+			xL[i] = minx + (maxx - minx)*i / 100;
 		}
-		ui.PlotWidget->graph(ui.PlotWidget->graphCount()-1)->setData(xL, yL);
+		if (ui.cbLine->isChecked())
+		{
+			ui.PlotWidget->addGraph();
+			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setPen(QPen(Qt::blue)); // line color red for second graph
+			QVector<double> yL;
+			yL.resize(101);
+			for (size_t i = 0; i <= 100; i++)
+			{
+				yL[i] = RL_a + xL[i] * RL_b;
+			}
+			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setData(xL, yL);
+		}
+		if (ui.cbPar->isChecked())
+		{
+			ui.PlotWidget->addGraph();
+			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setPen(QPen(Qt::green)); // line color red for second graph
+			QVector<double> yP;
+			yP.resize(101);
+			for (size_t i = 0; i <= 100; i++)
+			{
+				yP[i] = RP_a + xL[i] * RP_b + xL[i] * xL[i] * RP_c;
+			}
+			ui.PlotWidget->graph(ui.PlotWidget->graphCount() - 1)->setData(xL, yP);
+		}
 	}
 
 	//И перерисуем график на нашем widget
     ui.PlotWidget->replot();
 
 	graph0->getDataPosition(x, y, &lineAllPixelData);
+}
+
+void AntennaDataViewer::CreateTextFile()
+{
+	tm* wrnow;
+	time_t now;
+	time(&now);
+	wrnow = localtime(&now);
+	std::string namefile = "graph_";
+	namefile += std::to_string(wrnow->tm_year + 1900);
+	namefile += "_";
+	namefile += std::to_string(wrnow->tm_mon + 1);
+	namefile += "_";
+	namefile += std::to_string(wrnow->tm_mday);
+	namefile += "_";
+	namefile += std::to_string(wrnow->tm_hour);
+	namefile += "-";
+	namefile += std::to_string(wrnow->tm_min);
+	namefile += "-";
+	namefile += std::to_string(wrnow->tm_sec);
+	namefile += ".txt";
+	ofstream out(namefile);
+	if (!out) {
+		cout << "Cannot open file.\n";
+		return;
+	}
+	for (size_t i = 0; i < res[0].size(); ++i)
+	{
+		out << res[0][i] << "\t" << res[1][i] << "\n";
+	}
+	out.close();
 }
