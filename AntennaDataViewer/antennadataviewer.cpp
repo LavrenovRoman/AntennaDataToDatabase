@@ -184,6 +184,7 @@ void AntennaDataViewer::CreateLists()
 	{
 		inputPars << QString::fromLocal8Bit("Масштаб по Х");
 		inputPars << QString::fromLocal8Bit("Масштаб по Y");
+		inputPars << QString::fromLocal8Bit("Отношение масштаба антенн к первой");
 		inputPars << QString::fromLocal8Bit("Габарит по Х (м.)");
 		inputPars << QString::fromLocal8Bit("Габарит по Y (м.)");
 		inputPars << QString::fromLocal8Bit("Значение S11 первого минимума (dB)");
@@ -191,10 +192,15 @@ void AntennaDataViewer::CreateLists()
 		inputPars << QString::fromLocal8Bit("Значение S11 глобального минимума (dB)");
 		inputPars << QString::fromLocal8Bit("Частота глобального минимума (МГц)");
 
+
 		outputPars << QString::fromLocal8Bit("Значение S11 первого минимума (dB)");
 		outputPars << QString::fromLocal8Bit("Частота первого минимума (МГц)");
 		outputPars << QString::fromLocal8Bit("Значение S11 глобального минимума (dB)");
 		outputPars << QString::fromLocal8Bit("Частота глобального минимума (МГц)");
+		outputPars << QString::fromLocal8Bit("Отношение первых S11 к первой антенне");
+		outputPars << QString::fromLocal8Bit("Отношение частот первого минимума к первой антенне");
+		outputPars << QString::fromLocal8Bit("Отношения глобальных S11 к первой антенне");
+		outputPars << QString::fromLocal8Bit("Отношение частот глобального минимума к первой антенне");
 	}
 	else
 	{
@@ -258,6 +264,9 @@ void AntennaDataViewer::ClickedCalcCorr()
 		viewDataExp.clear();
 		for (size_t i = 0; i < pSelAll->GetExpsID()->size(); i++)
 		{
+			int indexFirstSelect = -1;
+			double minS11_1, minS11W_1;
+
 			int id_ex = pSelAll->GetExpsID()->at(i);
 			if (ui.listDBSelect->item(DB_SelectExp)->isSelected() && std::find(std::begin(IdsExperiment), std::end(IdsExperiment), id_ex) == std::end(IdsExperiment)) continue;
 			if (ui.listDBSelect->item(Concrete_Exp)->isSelected() && IdExperiment != -1 && id_ex != IdExperiment) continue;
@@ -265,11 +274,12 @@ void AntennaDataViewer::ClickedCalcCorr()
 			{
 				Antenna _ant = pSelAll->GetAnts()->at(i).at(j);
 				if (ui.listDBSelect->item(Analisys_Sel)->isSelected() && !pSelExAnt->HaveAntenna(pSelAll->GetAntsID()->at(i).at(j))) continue;
+				if (indexFirstSelect == -1) indexFirstSelect = j;
 				ViewDataExp vde(id_ex, pSelAll->GetAntsID()->at(i).at(j));
 				viewDataExp.push_back(vde);
 
 				double sizeX, sizeY;
-				if (currentInput == 2)
+				if (currentInput == 3)
 				{
 					double tx;
 					double maxx = -1*std::numeric_limits<double>::max();
@@ -283,7 +293,7 @@ void AntennaDataViewer::ClickedCalcCorr()
 					sizeX = maxx - minx;
 					sizeX *= _ant.inputPar.Radiator.ScaleX;
 				}
-				if (currentInput == 3)
+				if (currentInput == 4)
 				{
 					double ty;
 					double maxy = -1 * std::numeric_limits<double>::max();
@@ -300,7 +310,8 @@ void AntennaDataViewer::ClickedCalcCorr()
 
 
 				double minS11, minS11W;
-				if (currentOutput == 2 || currentOutput == 3 || currentInput == 6 || currentInput == 7)
+				if (currentOutput == 2 || currentOutput == 3 || currentOutput == 6 || currentOutput == 7
+				 || currentInput == 7 || currentInput == 8)
 				{
 					minS11 = 1000000;
 					for (size_t k = 0; k < _ant.outputPar._VEC_DATA_FOR_ONE_FREQ.size(); ++k)
@@ -310,6 +321,11 @@ void AntennaDataViewer::ClickedCalcCorr()
 							minS11 = temp;
 							minS11W = _ant.outputPar._VEC_DATA_FOR_ONE_FREQ[k]._EXCITATION_BY_VOLTAGE_SOURCE.Frequency;
 						}
+					}
+					if (j == 0)
+					{
+						minS11_1 = minS11;
+						minS11W_1 = minS11W;
 					}
 				}
 
@@ -322,21 +338,24 @@ void AntennaDataViewer::ClickedCalcCorr()
 					res[0].push_back(_ant.inputPar.Radiator.ScaleY);
 					break;
 				case 2:
-					res[0].push_back(sizeX);
+					res[0].push_back(_ant.inputPar.Radiator.ScaleX / pSelAll->GetAnts()->at(i).at(indexFirstSelect).inputPar.Radiator.ScaleX);
 					break;
 				case 3:
-					res[0].push_back(sizeY);
+					res[0].push_back(sizeX);
 					break;
 				case 4:
-					res[0].push_back(20 * log10(_ant.outputPar.fst_s11));
+					res[0].push_back(sizeY);
 					break;
 				case 5:
-					res[0].push_back(_ant.outputPar.fst_w / 1000000);
+					res[0].push_back(20 * log10(_ant.outputPar.fst_s11));
 					break;
 				case 6:
-					res[0].push_back(20 * log10(minS11));
+					res[0].push_back(_ant.outputPar.fst_w / 1000000);
 					break;
 				case 7:
+					res[0].push_back(20 * log10(minS11));
+					break;
+				case 8:
 					res[0].push_back(minS11W / 1000000);
 					break;
 				default:
@@ -355,6 +374,18 @@ void AntennaDataViewer::ClickedCalcCorr()
 					break;
 				case 3:
 					res[1].push_back(minS11W / 1000000);
+					break;
+				case 4:
+					res[1].push_back(log10(_ant.outputPar.fst_s11) / log10(pSelAll->GetAnts()->at(i).at(indexFirstSelect).outputPar.fst_s11));
+					break;
+				case 5:
+					res[1].push_back(_ant.outputPar.fst_w / pSelAll->GetAnts()->at(i).at(indexFirstSelect).outputPar.fst_w);
+					break;
+				case 6:
+					res[1].push_back(log10(minS11) / log10(minS11_1));
+					break;
+				case 7:
+					res[1].push_back(minS11W / minS11W_1);
 					break;
 				default:
 					break;

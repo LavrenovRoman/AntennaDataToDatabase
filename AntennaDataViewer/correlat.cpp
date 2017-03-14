@@ -29,6 +29,23 @@ double Correlat::koefKorr(std::vector<double> &x, std::vector<double> &y)
     return xy / sqrt(x2 * y2);
 }
 
+double Correlat::koefKorrPar(std::vector<double> &x, std::vector<double> &y, double& a0, double& a1, double& a2)
+{
+	if (x.size() != y.size()) return 0.0;
+	std::vector<double> x_;
+	double y_ = 0.0;
+	int n = x.size();
+	for (int i = 0; i < n; i++)
+	{
+		x_.push_back(a0 + a1*x[i] + a2*x[i]);
+		y_ += y[i];
+	}
+	y_ /= n;
+
+
+	return 0;
+}
+
 // y = a + b * x
 void Correlat::RegressLine(std::vector<double> &x, std::vector<double> &y, double& a, double& b, double& eps, double& A)
 {
