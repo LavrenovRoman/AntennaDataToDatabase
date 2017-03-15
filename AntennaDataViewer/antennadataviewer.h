@@ -115,6 +115,7 @@ private slots:
 	void DelFromDB();
 	void ResetWidgets();
 	void CreateTextFile();
+	void CronaTextFile();
 };
 
 #endif // ANTENNADATAVIEWER_H

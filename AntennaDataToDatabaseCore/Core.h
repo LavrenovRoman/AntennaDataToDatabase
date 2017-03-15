@@ -33,6 +33,7 @@ public:
 	std::string GetPathRecipient();
 	std::string GetPathDonor();
 	std::string GetPathCurrentDB();
+	void CronaFile(Antenna& _antenna);
 
 private:
 	std::shared_ptr<FrbrdDatabase> pFBDataBase;

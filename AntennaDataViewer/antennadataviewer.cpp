@@ -52,6 +52,7 @@ AntennaDataViewer::AntennaDataViewer(QWidget *parent)
 	connect(ui.actChangeDB, SIGNAL(triggered()), this, SLOT(ChangeDB()));
 	connect(ui.actCopyDB, SIGNAL(triggered()), this, SLOT(CopyDB()));
 	connect(ui.actDelDataDB, SIGNAL(triggered()), this, SLOT(DelFromDB()));
+	connect(ui.actOpenAntKrona, SIGNAL(triggered()), this, SLOT(CronaTextFile()));
 
 	connect(contextMenu, SIGNAL(triggered(QAction*)), this, SLOT(CreateTextFile())); // SLOT(slotActivated(QAction*)));
 
@@ -421,6 +422,8 @@ void AntennaDataViewer::ClickedCalcCorr()
 						break;
 					}
 				}
+				i = pSelAll->GetExpsID()->size();
+				break;
 			}
 		}
 	}
@@ -1077,4 +1080,20 @@ void AntennaDataViewer::CreateTextFile()
 		out << res[0][i] << "\t" << res[1][i] << "\n";
 	}
 	out.close();
+}
+
+void AntennaDataViewer::CronaTextFile()
+{
+	for (size_t i = 0; i < pSelAll->GetExpsID()->size(); i++)
+	{
+		if (IdExperiment != -1 && pSelAll->GetExpsID()->at(i) != IdExperiment) continue;
+		for (size_t j = 0; j < pSelAll->GetAnts()->at(i).size(); ++j)
+		{
+			if (IdAntenna != -1 && pSelAll->GetAntsID()->at(i).at(j) != IdAntenna) continue;
+			Antenna &ant = pSelAll->GetAnts()->at(i).at(j);
+			core.CronaFile(ant);
+			i = pSelAll->GetExpsID()->size();
+			break;
+		}
+	}
 }

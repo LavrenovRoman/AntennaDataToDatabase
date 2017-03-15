@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstddef>
 #include <memory>
+#include <Shellapi.h>
 
 using namespace std;
 
@@ -19,6 +20,20 @@ ParseFekoFile::ParseFekoFile()
 {
 	vsPre.reserve(100);
 	vsOut.reserve(50000);
+}
+
+std::string ParseFekoFile::dtos(double &d)
+{
+	std::ostringstream strs;
+	strs << d;
+	return strs.str();
+}
+
+std::string ParseFekoFile::itos(int &i)
+{
+	std::ostringstream strs;
+	strs << i;
+	return strs.str();
 }
 
 void ParseFekoFile::ParseFileComment(const std::string &_file, Experiment& _experiment)
@@ -1760,5 +1775,123 @@ void ParseFekoFile::ParseFilePre(const std::string &_file, Antenna& _antenna)
 		}
 
 		break;
+	}
+}
+
+void ParseFekoFile::CreateFilePre(Antenna& _antenna, std::string _dir)
+{
+	InputParameters &inp = _antenna.inputPar;
+	auto &rad = inp.Radiator;
+	auto &feed = inp.Feed;
+	auto &sub = inp.Substrate;
+	auto &grd = inp.Ground;
+	tm* wrnow;
+	time_t now;
+	time(&now);
+	wrnow = localtime(&now);
+	std::string namefile = "antenna_";
+	namefile += std::to_string(wrnow->tm_year + 1900);
+	namefile += "_";
+	namefile += std::to_string(wrnow->tm_mon + 1);
+	namefile += "_";
+	namefile += std::to_string(wrnow->tm_mday);
+	namefile += "_";
+	namefile += std::to_string(wrnow->tm_hour);
+	namefile += "-";
+	namefile += std::to_string(wrnow->tm_min);
+	namefile += "-";
+	namefile += std::to_string(wrnow->tm_sec);
+	namefile += ".pre";
+	ofstream out(namefile);
+	if (!out) {
+		cout << "Cannot open file.\n";
+		return;
+	}
+	out << "************************************************" << "\n";
+	out << "** PHYSICAL ANTENNA PARAMS" << "\n";
+	out << "**********" << "\n";
+	out << "** TYPE" << "\n";
+	if (_antenna.type == STRIPE) out << "** microstrip" << "\n";
+	if (_antenna.type == PLANE) out << "** plane" << "\n";
+	if (_antenna.type == WIRE) out << "** wire" << "\n";
+	out << "**********" << "\n";
+	out << "** RADIATOR" << "\n";
+	out << "** ScaleX, ScaleY, radius/stripWidth/feedLineWidth: " << "\n";
+	out << "** " << dtos(rad.ScaleX) << " " << dtos(rad.ScaleX) << " " << dtos(rad.Radius_StripWidth_FeedLineWidth) << "\n";
+	out << "** Characteristics of fractal radiator: N, m:" << "\n";
+	out << "** " << itos(rad.fr_N) << " " << itos(rad.fr_m) << "\n";
+	out << "** Characteristics of fractal radiator: x[]" << "\n";
+	out << "** "; for (auto d : rad.fr_pX) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: y[]" << "\n";
+	out << "** "; for (auto d : rad.fr_pY) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: t[]" << "\n";
+	out << "** "; for (auto d : rad.fr_pT) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: D11[]" << "\n";
+	out << "** "; for (auto d : rad.fr_D11) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: D12[]" << "\n";
+	out << "** "; for (auto d : rad.fr_D12) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: D21[]" << "\n";
+	out << "** "; for (auto d : rad.fr_D21) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: D22[]" << "\n";
+	out << "** "; for (auto d : rad.fr_D22) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: lam[]" << "\n";
+	out << "** "; for (auto d : rad.fr_lam) out << " " << dtos(d); out << "\n";
+	out << "** Characteristics of fractal radiator: al[]" << "\n";
+	out << "** "; for (auto d : rad.fr_al) out << " " << dtos(d); out << "\n";
+	out << "** Point positions of first order prefractal" << "\n";
+	out << "** "; 
+	for (size_t i = 0; i < rad.fr_pred1X.size(); ++i)
+	{
+		out << " (" << dtos(rad.fr_pred1X[i]) << ", " << dtos(rad.fr_pred1Y[i]) << ")";
+	}
+	out << "\n";
+	out << "** Point positions of m-th order prefractal" << "\n";
+	out << "** ";
+	for (size_t i = 0; i < rad.fr_predmX.size(); ++i)
+	{
+		out << " (" << dtos(rad.fr_predmX[i]) << ", " << dtos(rad.fr_predmY[i]) << ")";
+	}
+	out << "\n";
+	out << "**********" << "\n";
+	out << "** FEED" << "\n";
+	out << "** Coordinates of feedpoint:" << "\n";
+	out << "** " << dtos(feed.FeedX) << " " << dtos(feed.FeedY) << "\n";
+	out << "**********" << "\n";
+	out << "** SUBSTRATE" << "\n";
+	out << "** Substrate: permittivity, loss tangent, density, thickness:" << "\n";
+	out << "** " << dtos(sub.Permittivity) << " " << dtos(sub.LossTangent) << " " << dtos(sub.Density) << " " << dtos(sub.Thickness) << "\n";
+	out << "** Substrate: left up coordinate, right down coordinate:" << "\n";
+	out << "** " << dtos(sub.CoorLeftUpX) << " " << dtos(sub.CoorLeftUpY) << " " << dtos(sub.CoorRightDownX) << " " << dtos(sub.CoorRightDownY) << "\n";
+	out << "**********" << "\n";
+	out << "** GROUND" << "\n";
+	out << "** Coordinates of ground:" << "\n";
+	out << "**";
+	for (size_t i = 0; i < grd.coordX.size(); ++i)
+	{
+		out << " (" << dtos(grd.coordX[i]) << ", " << dtos(grd.coordY[i]) << ")";
+		if (i < grd.coordX.size() - 1) out << ",";
+	}
+	out << "\n";
+	out << "**********" << "\n";
+	out << "** END PHYSICAL ANTENNA PARAMS" << "\n";
+	out << "************************************************" << "\n";
+
+	out.close();
+
+	std::string cronapath = _dir + "crona.exe";
+
+	HINSTANCE hInst = ShellExecute(
+		NULL,
+		"open",
+		"crona.exe",
+		namefile.c_str(),
+		_dir.c_str(),
+		SW_SHOWNORMAL);
+
+	if ((UINT)hInst <= 32)
+	{
+		int i = 0; 
+		i++;
+		--i;
 	}
 }

@@ -364,3 +364,9 @@ int Core::DeleteExperiment(int idExp)
 {
 	return pFBDataBase->DeleteExperiment(idExp);
 }
+
+void Core::CronaFile(Antenna& _antenna)
+{
+	ParseFekoFile parseFeko;
+	parseFeko.CreateFilePre(_antenna, GetCurrentDir());
+}
