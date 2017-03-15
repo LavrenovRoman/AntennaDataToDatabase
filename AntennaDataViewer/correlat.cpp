@@ -37,11 +37,20 @@ double Correlat::koefKorrPar(std::vector<double> &x, std::vector<double> &y, dou
 	int n = x.size();
 	for (int i = 0; i < n; i++)
 	{
-		x_.push_back(a0 + a1*x[i] + a2*x[i]);
+		x_.push_back(a0 + a1 * x[i] + a2 * x[i] * x[i]);
 		y_ += y[i];
 	}
 	y_ /= n;
 
+	double ess = 0;
+	double tss = 0;
+	for (int i = 0; i < n; i++)
+	{
+		ess += (y[i] - x_[i])*(y[i] - x_[i]);
+		tss += (y[i] - y_) * (y[i] - y_);
+	}
+
+	return sqrt(1 - ((n - 1)*ess) / ((n - 2)*tss));
 
 	return 0;
 }

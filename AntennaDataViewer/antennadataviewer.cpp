@@ -439,12 +439,15 @@ void AntennaDataViewer::ClickedCalcCorr()
 	}
 	
 	SortResult(0, res[0].size() - 1);
+	
+	corr.RegressLine(res[0], res[1], RL_a, RL_b, RL_eps, RL_A);
+	corr.RegressParabol(res[0], res[1], RP_a, RP_b, RP_c, RP_eps, RP_A);
 
 	double korr = corr.koefKorr(res[0], res[1]);
 	ui.leCorrLine->setText(QString::number(korr));
 
-	corr.RegressLine(res[0], res[1], RL_a, RL_b, RL_eps, RL_A);
-	corr.RegressParabol(res[0], res[1], RP_a, RP_b, RP_c, RP_eps, RP_A);
+	double korrPar = corr.koefKorrPar(res[0], res[1], RP_a, RP_b, RP_c);
+	ui.leCorrPar->setText(QString::number(korrPar));
 
 	SortResult();
 

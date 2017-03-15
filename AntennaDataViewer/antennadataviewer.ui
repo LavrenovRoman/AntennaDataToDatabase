@@ -25,6 +25,10 @@
   <property name="windowTitle">
    <string>AntennaDataViewer</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>ant_logo.jpg</normaloff>ant_logo.jpg</iconset>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QCustomPlot" name="PlotWidget" native="true">
     <property name="geometry">
