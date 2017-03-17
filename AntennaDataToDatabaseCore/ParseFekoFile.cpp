@@ -1878,20 +1878,14 @@ void ParseFekoFile::CreateFilePre(Antenna& _antenna, std::string _dir)
 
 	out.close();
 
-	std::string cronapath = _dir + "crona.exe";
+	std::string cronapath = _dir + "DrawFractal.exe";
+	std::string filepath = _dir + namefile;
 
 	HINSTANCE hInst = ShellExecute(
 		NULL,
 		"open",
-		"crona.exe",
+		cronapath.c_str(),
 		namefile.c_str(),
-		_dir.c_str(),
+		NULL,
 		SW_SHOWNORMAL);
-
-	if ((UINT)hInst <= 32)
-	{
-		int i = 0; 
-		i++;
-		--i;
-	}
 }
